@@ -1,7 +1,7 @@
 ---
 description: Run the gr multi-agent reviewer on a GitHub PR (preview or post)
 argument-hint: <pr-url> [--show | --post] [--preset quick|standard|deep] [--repo <path>]
-allowed-tools: Bash(gr:*), Bash(which:*), Bash(curl:*), Bash(bash:*), Bash(test:*), Bash(mkdir:*), Bash(ls:*), Bash(pwd:*), Bash(find:*), Bash(git:*), Bash(/Users/*:*), Bash(~/.local/bin/gr:*), Read, Glob
+allowed-tools: Bash(gr:*), Bash(which:*), Bash(curl:*), Bash(bash:*), Bash(mkdir:*), Bash(pwd), Bash(git:*), Bash(/Users/*:*), Bash(~/.local/bin/gr:*), Read, Glob
 ---
 
 # Review PR with gr
@@ -10,85 +10,80 @@ The user wants a deep, multi-agent review of a GitHub pull request.
 
 Arguments passed: `$ARGUMENTS`
 
-## What to do (in this exact order — keep each shell command SIMPLE, no `&&`, `||`, or `2>/dev/null`)
+---
 
-### Step 1: Resolve the `gr` binary path
+## ⛔ HARD RULES — read these first
 
-Do these as separate tool calls:
+1. **NEVER** use `&&`, `||`, `;`, `|`, or `2>/dev/null` in any bash command. One operation per `Bash` tool call. This is non-negotiable.
+2. **NEVER** scan outside the current working directory. No `find /Users/...`, no `find ~`, no `find /`. Only Glob inside CWD.
+3. **NEVER** check more than one level of subfolders. If not found in CWD or its immediate children, **ask the user immediately**.
+4. Use the **Read** tool (not `test -f`, not `ls`) to check if a file exists.
+5. Use the **Glob** tool (not `find`, not `ls -d`) to list folders.
 
-a) Try `which gr` — if it returns a path, use it.
-b) Else, use the **Read tool** (NOT bash) to check if `~/.local/bin/gr` exists.
-c) If neither exists, auto-install with this single command:
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/Immy6315/claude-marketplace/main/plugins/gr-reviewer/scripts/install.sh)
-```
-After install, use `~/.local/bin/gr`.
+---
+
+## What to do (in this exact order)
+
+### Step 1: Resolve the `gr` binary
+
+a) Run **only** `which gr` (no operators, nothing else).
+   - If it returns a path → use it. Done.
+b) Else, use the **Read tool** on `/Users/<username>/.local/bin/gr` to check existence.
+   - If it exists → use that absolute path.
+c) Else, install once:
+   ```bash
+   bash <(curl -fsSL https://raw.githubusercontent.com/Immy6315/claude-marketplace/main/plugins/gr-reviewer/scripts/install.sh)
+   ```
+   Then use `~/.local/bin/gr`.
 
 ### Step 2: Parse the PR URL
 
-The first non-flag argument must be of the form:
+The first non-flag argument must be:
 ```
 https://github.com/<owner>/<repo>/pull/<number>
 ```
 Extract `<owner>` and `<repo>`. If missing, ask the user and stop.
 
-### Step 3: Resolve the repo path (MANDATORY auto-detection)
+### Step 3: Resolve the repo path (LIMITED SCOPE — CWD only)
 
 If the user passed `--repo <path>`, skip auto-detect and jump to Step 4.
 
-Otherwise, run these checks **sequentially**, one bash command at a time, **no shell operators**:
+Otherwise:
 
-**3a. Check current directory.** Run each command separately:
-```bash
-pwd
-```
+**3a. Check current directory.** Run **only**:
 ```bash
 git -C . remote get-url origin
 ```
-If the second command succeeds and the URL contains `<owner>/<repo>`, use `.` and skip to Step 5.
+If the output contains `<owner>/<repo>` → use `.` and skip to Step 5.
 
-**3b. Look for a matching subfolder.** Use the **Glob tool** (NOT bash find) with pattern `*` to list subfolders. For each candidate that matches `<repo>` (exact, then case-insensitive, then prefix match):
-```bash
-git -C ./<candidate> remote get-url origin
-```
-If the URL contains `<owner>/<repo>`, use that path and skip to Step 5.
-
-**3c. One level deeper.** Use the **Glob tool** with pattern `*/.git` to find nested git repos. For each match's parent directory:
-```bash
-git -C ./<parent> remote get-url origin
-```
-If the URL matches, use that path.
-
-**3d. If still not found — ASK THE USER.**
-
-First, build a list of git repos in CWD by running this for each subfolder you saw in Step 3b:
+**3b. Check immediate subfolders only (no deeper, no broader).**
+Use the **Glob tool** with pattern `*/` (one level only) to list direct children of CWD.
+For each folder name that equals `<repo>` (exact, then case-insensitive), run **only**:
 ```bash
 git -C ./<folder> remote get-url origin
 ```
-Collect successful results into a list.
+If a match is found → use that folder and skip to Step 5.
 
-Then ask the user (use plain natural language, no shell):
+**3c. If not found, ASK THE USER IMMEDIATELY.** Do **NOT** search further. Do **NOT** run `find` anywhere.
 
-> ❌ Couldn't auto-detect a local clone of **`<owner>/<repo>`**.
+Tell the user, in plain prose:
+
+> ❌ I couldn't find a local clone of **`<owner>/<repo>`** in your current folder (`<cwd>`) or its immediate subfolders.
 >
-> Git repos found here:
-> - `./os-item` → gokwik/os-item
-> - `./os-order` → gokwik/os-order
-> - ...
+> Where is your local clone of `<owner>/<repo>`? Reply with one of:
 >
-> **Where is your local clone of `<owner>/<repo>`?** Reply with one of:
-> 1. An absolute path: `/Users/.../path/to/repo`
-> 2. A relative path: `./some-folder`
-> 3. `clone` — and I'll clone it for you to a temp dir
-> 4. `cancel` — to abort
+> 1. **Absolute path** — e.g., `/Users/<you>/code/<repo>`
+> 2. **Relative path from here** — e.g., `./some-folder`
+> 3. **`clone`** — and I'll clone it into `/tmp/gr-<repo>`
+> 4. **`cancel`** — to abort
 
-Wait for the user's answer.
+Wait for the user's reply. Then go to Step 4 with whatever path they gave.
 
-If they say `clone`:
+If they reply `clone`:
 ```bash
 git clone https://github.com/<owner>/<repo>.git /tmp/gr-<repo>
 ```
-Then use `/tmp/gr-<repo>` as the path.
+Use `/tmp/gr-<repo>` as the path.
 
 ### Step 4: Validate the chosen repo path
 
@@ -96,47 +91,41 @@ Run **separately**:
 ```bash
 git -C "<path>" rev-parse --show-toplevel
 ```
+Then:
 ```bash
 git -C "<path>" remote get-url origin
 ```
-- If the first fails → not a git repo, tell the user and ask again.
-- If the origin doesn't contain `<owner>/<repo>` → it's likely a fork; warn the user and ask if they want to proceed.
+- If the first command fails → not a git repo, tell the user, ask again.
+- If the origin doesn't contain `<owner>/<repo>` → likely a fork; warn the user, ask if they want to proceed.
 
 ### Step 5: Default to preview mode
 
-If the user did NOT explicitly say "post" or pass `--post`, append `--show` so nothing is posted to GitHub yet.
+Unless the user said "post" or passed `--post`, append `--show`.
 
 ### Step 6: Run the review
 
 ```bash
 <gr-path> review --pr <URL> --repo <validated-path> --show
 ```
-(Drop `--show` if the user wanted to post.)
 
-Stream the output. The first run on a new PR may take 1–3 min. The first review of a repo also builds the symbol graph (cached for future reviews).
+Stream the output. First run on a new PR may take 1–3 min while specialists run in parallel.
 
-### Step 7: On finish
+### Step 7: After completion
 
-- If `--show`: tell the user it was a preview, offer to re-run without `--show` to post for real.
+- If `--show`: tell the user it was a preview, offer to re-run without `--show` to post.
 - If posted: report the GitHub URL gr emitted.
 
 ### Step 8: GitHub token prompt
 
-If gr asks for a GitHub token, the user will be guided through creating a Personal Access Token in their terminal. The PAT is saved to their own macOS Keychain — never sent anywhere except GitHub's API. Do not try to handle the prompt for them.
+If gr asks for a GitHub token, the user will be guided through creating a Personal Access Token in their terminal. The PAT is saved to their own macOS Keychain — never sent anywhere except GitHub's API. Don't try to handle the prompt for them.
 
-## Repo detection priority
+---
+
+## Detection priority summary
 
 ```
-1. --repo <path> flag        → explicit, skip auto-detect
-2. Current dir's git remote matches owner/repo
-3. ./<repo> subfolder with matching origin
-4. Case-insensitive / prefix subfolder match
-5. One level deeper (Glob for */.git)
-6. ASK USER (mandatory) — options: path | clone | cancel
+1. --repo <path> flag        → explicit, use it
+2. CWD's git remote          → matches owner/repo? use "."
+3. Immediate subfolder       → matches ./<repo> with right origin? use it
+4. ASK USER                  → path | clone | cancel  ← STOP SEARCHING HERE
 ```
-
-## ⚠️ Shell command rules (avoid auto-prompt)
-
-- **Never** use `&&`, `||`, `;`, `|`, or `2>/dev/null` in a single bash command — Claude Code asks for approval on every compound command.
-- One operation per `Bash` tool call. Use the LLM's reasoning to chain them.
-- Use the **Read** or **Glob** tools instead of `test -f`, `ls -la`, or `find`.

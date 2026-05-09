@@ -1,6 +1,6 @@
 {
   "name": "gr-reviewer",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Multi-agent PR reviewer that runs 7 specialist AI agents in parallel (security, performance, observability, architecture, code-quality, testing, domain), consolidates their findings, and posts inline review comments on GitHub PRs.",
   "author": {
     "name": "Imran Khan",
