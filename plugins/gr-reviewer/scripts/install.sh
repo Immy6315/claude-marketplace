@@ -102,15 +102,25 @@ chmod +x "$TMP/$ASSET"
 
 # --- install ---
 DEST="$PREFIX/gr"
-bold "▶ Installing to $DEST (and $PREFIX/GR)"
-if [[ -w "$PREFIX" ]]; then
-  install -m 0755 "$TMP/$ASSET" "$DEST"
-  ln -sf "$DEST" "$PREFIX/GR"
-else
+bold "▶ Installing to $DEST"
+
+# Clean up any prior install (broken symlinks, old binary, etc.)
+# Important on macOS: filesystem is case-insensitive by default, so a
+# previous `ln -sf gr GR` would have created a symlink loop. Remove both.
+SUDO=""
+if [[ ! -w "$PREFIX" ]]; then
   yellow "→ $PREFIX is not writable; using sudo"
-  sudo install -m 0755 "$TMP/$ASSET" "$DEST"
-  sudo ln -sf "$DEST" "$PREFIX/GR"
+  SUDO="sudo"
 fi
+$SUDO rm -f "$PREFIX/gr" "$PREFIX/GR" 2>/dev/null || true
+$SUDO install -m 0755 "$TMP/$ASSET" "$DEST"
+
+# Only create uppercase GR alias on case-sensitive filesystems
+# (otherwise it's the same path → symlink loop)
+if [[ ! -e "$PREFIX/GR" ]]; then
+  $SUDO ln -sf "$DEST" "$PREFIX/GR" 2>/dev/null || true
+fi
+
 green "✓ installed: $("$DEST" version 2>/dev/null || echo "$DEST")"
 
 # --- PATH hint (only if PREFIX is not on PATH) ---
