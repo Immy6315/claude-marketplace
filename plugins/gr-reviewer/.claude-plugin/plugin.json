@@ -7,15 +7,7 @@
     "url": "https://github.com/Immy6315"
   },
   "homepage": "https://github.com/Immy6315/GR",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Immy6315/GR.git"
-  },
+  "repository": "https://github.com/Immy6315/GR.git",
   "license": "Internal",
-  "keywords": ["github", "pr-review", "code-review", "ai", "multi-agent"],
-  "commands": "./commands",
-  "agents": "./agents",
-  "hooks": {
-    "PostToolUse": []
-  }
+  "keywords": ["github", "pr-review", "code-review", "ai", "multi-agent"]
 }
