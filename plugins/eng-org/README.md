@@ -98,6 +98,31 @@ Checker), which the EM picks during intake.
 
 ---
 
+## Warm-agent continuation (speed)
+
+EM, TL, and Dev agents are kept **warm** across pipeline phases. Each
+spawn returns an `agent_id`; subsequent skills resume the same agent via
+`SendMessage` instead of spawning fresh and re-reading every artifact.
+
+| Role | Mode | Why |
+|---|---|---|
+| `em` (per REQ) | **WARM** | spec → analysis → merge-readiness → em-summary is one author. |
+| `tl-<domain>` (per REQ) | **WARM** | analysis → assign → merge-readiness is one TL. |
+| `dev-<type>` (per task) | **WARM** | code → fix-iteration → dev-report is one Dev. |
+| `reviewer-*` | **COLD** | Independence is required (warm reviewer = echo chamber). |
+| `test-*` | **COLD** | Same — independent verification. |
+
+State is persisted at
+`governance/requirements/REQ-<id>/agent_state.json` and read by every
+warm-eligible skill. See `AGENT_STATE.md` in this plugin for the full
+contract, schema, and failure modes.
+
+Typical impact: ~30-min UI-only pipeline → ~10-12 min by eliminating
+cold-reads of `spec.md`, task files, dev-reports, and test reports
+across phases.
+
+---
+
 ## Maintenance commands
 
 | Command | Purpose |
