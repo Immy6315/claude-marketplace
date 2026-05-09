@@ -1,89 +1,134 @@
 #!/usr/bin/env bash
-# install.sh — one-shot bootstrap for the gr CLI behind the
-# gr-reviewer Claude Code plugin.
+# install.sh — install the gr binary for the gr-reviewer plugin.
+#
+# Downloads a pre-built binary from Immy6315/gr-releases (public).
+# No Go toolchain required, no source access required.
 #
 # Usage:
 #   bash <(curl -fsSL https://raw.githubusercontent.com/Immy6315/claude-marketplace/main/plugins/gr-reviewer/scripts/install.sh)
 #
-# What it does:
-#   1. Verifies prereqs (Go 1.25+, git, claude CLI)
-#   2. Clones (or pulls) Immy6315/GR into ~/.gr-src
-#   3. Runs the repo's own scripts/install.sh, which builds the gr
-#      binary and symlinks both `gr` and `GR` into /usr/local/bin
-#
-# This is a *source* installer. A binary installer (no Go required)
-# will be added once cross-platform releases are published.
+# Env overrides:
+#   GR_VERSION   defaults to 'latest'; pin to e.g. 'v0.1.0' for reproducible installs
+#   GR_PREFIX    defaults to '/usr/local/bin'
 
 set -euo pipefail
 
-SRC_DIR="${GR_SRC_DIR:-$HOME/.gr-src}"
-REPO_URL="${GR_REPO_URL:-https://github.com/Immy6315/GR.git}"
-BRANCH="${GR_BRANCH:-main}"
+REPO="${GR_RELEASES_REPO:-Immy6315/gr-releases}"
+TAG="${GR_VERSION:-latest}"
+PREFIX="${GR_PREFIX:-/usr/local/bin}"
 
 red()    { printf '\033[31m%s\033[0m\n' "$*"; }
 green()  { printf '\033[32m%s\033[0m\n' "$*"; }
 yellow() { printf '\033[33m%s\033[0m\n' "$*"; }
 bold()   { printf '\033[1m%s\033[0m\n' "$*"; }
 
-bold "▶ gr-reviewer plugin bootstrap"
-echo "  Source dir : $SRC_DIR"
-echo "  Repo       : $REPO_URL ($BRANCH)"
+bold "▶ gr-reviewer plugin: installing gr binary"
 
-# --- prereq: git ---
-if ! command -v git >/dev/null 2>&1; then
-  red "✗ git not found"
+# --- detect OS / arch ---
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+case "$OS" in
+  darwin|linux) ;;
+  *) red "✗ unsupported OS: $OS (only darwin/linux are built)"; exit 1 ;;
+esac
+
+ARCH="$(uname -m)"
+case "$ARCH" in
+  x86_64|amd64) ARCH="amd64" ;;
+  aarch64|arm64) ARCH="arm64" ;;
+  *) red "✗ unsupported arch: $ARCH (only amd64/arm64 are built)"; exit 1 ;;
+esac
+
+green "✓ platform: $OS-$ARCH"
+
+# --- prereqs ---
+for cmd in curl install; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    red "✗ '$cmd' not found in PATH"
+    exit 1
+  fi
+done
+
+# --- resolve tag if 'latest' ---
+if [[ "$TAG" == "latest" ]]; then
+  bold "▶ Resolving latest release of $REPO"
+  TAG="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" \
+    | grep '"tag_name"' | head -1 \
+    | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')"
+  if [[ -z "$TAG" ]]; then
+    red "✗ could not resolve latest tag — has any release been cut yet?"
+    echo "  See: https://github.com/$REPO/releases"
+    exit 1
+  fi
+fi
+green "✓ version: $TAG"
+
+ASSET="gr-$OS-$ARCH"
+URL="https://github.com/$REPO/releases/download/$TAG/$ASSET"
+SUMS_URL="https://github.com/$REPO/releases/download/$TAG/checksums.txt"
+
+# --- download ---
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
+bold "▶ Downloading $URL"
+if ! curl -fsSL "$URL" -o "$TMP/$ASSET"; then
+  red "✗ download failed"
+  echo "  Check: https://github.com/$REPO/releases/tag/$TAG"
   exit 1
 fi
+green "✓ downloaded $(wc -c < "$TMP/$ASSET" | awk '{print $1}') bytes"
 
-# --- prereq: go ---
-if ! command -v go >/dev/null 2>&1; then
-  red "✗ go not found in PATH"
-  echo "  Install Go 1.25+: https://go.dev/dl/  (macOS: brew install go)"
-  exit 1
-fi
-GO_VERSION="$(go version | awk '{print $3}' | sed 's/^go//')"
-GO_MAJOR="$(echo "$GO_VERSION" | cut -d. -f1)"
-GO_MINOR="$(echo "$GO_VERSION" | cut -d. -f2)"
-if [[ "$GO_MAJOR" -lt 1 || ( "$GO_MAJOR" -eq 1 && "$GO_MINOR" -lt 25 ) ]]; then
-  red "✗ go $GO_VERSION is too old — need 1.25+"
-  exit 1
-fi
-green "✓ go $GO_VERSION"
-
-# --- prereq: claude CLI (informational) ---
-if command -v claude >/dev/null 2>&1; then
-  green "✓ claude CLI found"
+# --- verify checksum (best effort: skip if checksums.txt missing) ---
+if curl -fsSL "$SUMS_URL" -o "$TMP/checksums.txt" 2>/dev/null; then
+  expected="$(awk -v a="$ASSET" '$2==a{print $1}' "$TMP/checksums.txt")"
+  if [[ -n "$expected" ]]; then
+    actual="$(shasum -a 256 "$TMP/$ASSET" | awk '{print $1}')"
+    if [[ "$expected" != "$actual" ]]; then
+      red "✗ checksum mismatch!"
+      echo "  expected: $expected"
+      echo "  actual  : $actual"
+      exit 1
+    fi
+    green "✓ checksum verified ($actual)"
+  else
+    yellow "⚠ asset not in checksums.txt — skipping verification"
+  fi
 else
-  yellow "⚠ claude CLI not found — gr needs it at runtime"
+  yellow "⚠ no checksums.txt published for $TAG — skipping verification"
+fi
+
+chmod +x "$TMP/$ASSET"
+
+# --- install ---
+DEST="$PREFIX/gr"
+bold "▶ Installing to $DEST (and $PREFIX/GR)"
+if [[ -w "$PREFIX" ]]; then
+  install -m 0755 "$TMP/$ASSET" "$DEST"
+  ln -sf "$DEST" "$PREFIX/GR"
+else
+  yellow "→ $PREFIX is not writable; using sudo"
+  sudo install -m 0755 "$TMP/$ASSET" "$DEST"
+  sudo ln -sf "$DEST" "$PREFIX/GR"
+fi
+green "✓ installed: $("$DEST" version 2>/dev/null || echo "$DEST")"
+
+# --- claude CLI hint ---
+if ! command -v claude >/dev/null 2>&1; then
+  yellow "⚠ claude CLI not found on PATH — gr needs it at runtime"
   echo "  Install:  curl -fsSL https://claude.ai/install.sh | sh"
   echo "  Log in:   claude login"
 fi
 
-# --- clone or pull ---
-if [[ -d "$SRC_DIR/.git" ]]; then
-  bold "▶ Updating existing clone at $SRC_DIR"
-  ( cd "$SRC_DIR" && git fetch --quiet origin "$BRANCH" && git checkout --quiet "$BRANCH" && git pull --quiet --ff-only )
-else
-  bold "▶ Cloning $REPO_URL into $SRC_DIR"
-  git clone --quiet --branch "$BRANCH" "$REPO_URL" "$SRC_DIR"
-fi
-green "✓ source ready"
-
-# --- run repo installer ---
-bold "▶ Building & linking gr (delegating to repo installer)"
-( cd "$SRC_DIR" && ./scripts/install.sh --skip-auth-check )
-
 bold "▶ Done"
-cat <<'EOF'
+cat <<EOF
 
-Next steps:
+Try it:
   gr --help
-  gr auth login                # optional; runtime auth-prompt also works
-  gr review --pr <PR URL> --show
+  gr review --pr https://github.com/owner/repo/pull/123 --show
 
-Or use the slash command from Claude Code:
+Or via the slash command:
   /gr-reviewer:review-pr <PR URL>
 
-To uninstall later:
+To uninstall:
   gr uninstall --purge
 EOF
