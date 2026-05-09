@@ -9,13 +9,14 @@
 #
 # Env overrides:
 #   GR_VERSION   defaults to 'latest'; pin to e.g. 'v0.1.0' for reproducible installs
-#   GR_PREFIX    defaults to '/usr/local/bin'
+#   GR_PREFIX    defaults to '$HOME/.local/bin' (user-writable, no sudo needed)
 
 set -euo pipefail
 
 REPO="${GR_RELEASES_REPO:-Immy6315/gr-releases}"
 TAG="${GR_VERSION:-latest}"
-PREFIX="${GR_PREFIX:-/usr/local/bin}"
+PREFIX="${GR_PREFIX:-$HOME/.local/bin}"
+mkdir -p "$PREFIX"
 
 red()    { printf '\033[31m%s\033[0m\n' "$*"; }
 green()  { printf '\033[32m%s\033[0m\n' "$*"; }
@@ -111,6 +112,17 @@ else
   sudo ln -sf "$DEST" "$PREFIX/GR"
 fi
 green "✓ installed: $("$DEST" version 2>/dev/null || echo "$DEST")"
+
+# --- PATH hint (only if PREFIX is not on PATH) ---
+case ":$PATH:" in
+  *":$PREFIX:"*) ;;
+  *)
+    yellow "⚠ $PREFIX is not on your PATH"
+    echo "  Add this to your ~/.zshrc or ~/.bashrc:"
+    echo "    export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo "  (Claude Code's slash commands will still find gr via absolute path.)"
+    ;;
+esac
 
 # --- claude CLI hint ---
 if ! command -v claude >/dev/null 2>&1; then
