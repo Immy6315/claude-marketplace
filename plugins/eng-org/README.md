@@ -77,9 +77,35 @@ inside the plugin and are available globally as registered subagents.
 
 ---
 
-## The pipeline (Mode B)
+## Three pipelines, by risk profile
 
-For any non-trivial change, run the slash commands in order:
+eng-org gives you three flows. The EM picks at intake based on what the
+change actually touches.
+
+### Mode A — Maker → Checker (trivial)
+
+For docs / config / governance-only changes that don't touch application
+code. Single-author + fresh-Checker pattern. Built into the existing
+review process.
+
+### Mode C — Bug-fix flow (NEW; ~5 min, 5–6 agent calls)
+
+For **bugs** with a reproducer, narrow scope, and no auth/schema/deps/PII
+surface. Faster than Mode B; safer than Mode A. See `MODE_C.md` for the
+full eligibility contract.
+
+| Step | Command | What it does |
+|---|---|---|
+| 1 | `/eng-org:bug-intake "<bug + reproducer>"` | Run safety checklist; write spec.md (`mode: C`); assign 1 TL. Refuses + escalates to Mode B if any safety check fails. |
+| 2 | `/eng-org:bug-fix REQ-<id>` | TL writes 1-paragraph analysis; spawns 1 Dev; Dev produces fix + regression test that fails-then-passes. |
+| 3 | `/eng-org:bug-verify REQ-<id>` | In parallel: test-regression, test-unit (if pure logic), 1 reviewer (architecture). Orchestrator writes 1-page merge-readiness. |
+
+Auto-escalates to Mode B if any participant detects scope creep.
+
+### Mode B — Full 5-role pipeline (features, schema, auth, ~25–30 calls)
+
+For features, schema migrations, new dependencies, user-visible flows,
+auth/PII surface, or governance core changes. The original eng-org flow.
 
 | Step | Command | What it does |
 |---|---|---|
@@ -90,9 +116,6 @@ For any non-trivial change, run the slash commands in order:
 | 5 | `/eng-org:run-reviews REQ-<id>` | Reviewers (architecture / security / performance / standards / observability) |
 | 6 | `/eng-org:merge-readiness REQ-<id>` | TL aggregates, EM gates |
 | 7 | `/eng-org:em-summary REQ-<id>` | Human-facing summary |
-
-For trivial governance/docs/config changes, use **Mode A** (Maker →
-Checker), which the EM picks during intake.
 
 `/eng-org:pilot-check` is a self-test of the framework on its own files.
 
@@ -113,13 +136,21 @@ Checker), which the EM picks during intake.
 - `governance/**`, `.claude/**`, `**/*.md`, `PROJECT.yml`
 - No new dependencies, no schema changes, no user-visible behaviour.
 
+**Mode C (bug-fix, ~5 min)** — restoring broken behavior, with ALL of:
+- A reproducer (failing test or reliable trigger steps)
+- ≤ 3 production files (≤ 5 with TL approval)
+- No auth / schema / deps / PII / payment surface
+- No new behavior introduced — just restoring what was broken
+
 **Mode B (5-role)** — touches any of:
-- application code, schema migrations, new dependencies,
+- application code (features), schema migrations, new dependencies,
   user-visible flows, or governance core (CONSTITUTION, ROLES, agent
-  definitions).
+  definitions). Also: any bug whose fix exceeds Mode C eligibility.
 
 When in doubt, prefer Mode B. The cost of unnecessary review is low;
-the cost of skipping necessary review is high.
+the cost of skipping necessary review is high. Mode C's safety
+guarantees rest entirely on the eligibility checklist — when in doubt
+about whether a bug fits, escalate.
 
 ---
 
