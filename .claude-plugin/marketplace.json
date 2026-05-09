@@ -6,8 +6,8 @@
     "url": "https://github.com/Immy6315"
   },
   "metadata": {
-    "description": "Claude Code plugin marketplace by Immy6315 — currently hosts the gr multi-agent PR reviewer.",
-    "version": "0.1.0"
+    "description": "Claude Code plugin marketplace by Immy6315 — multi-agent PR reviewer and 5-role engineering org plugins.",
+    "version": "0.2.0"
   },
   "plugins": [
     {
@@ -25,6 +25,23 @@
       "repository": "https://github.com/Immy6315/GR",
       "license": "Internal",
       "keywords": ["pr-review", "code-review", "github-actions", "ai-review"],
+      "strict": false
+    },
+    {
+      "name": "eng-org",
+      "source": "./plugins/eng-org",
+      "description": "5-role multi-agent engineering org — EM, Tech Leads, Domain Devs, independent Test agents, specialist Reviewers. Drops a complete governance + review pipeline into any project via /eng-org:init.",
+      "version": "0.1.0",
+      "category": "engineering-process",
+      "tags": ["multi-agent", "orchestration", "governance", "code-review", "ai", "claude", "engineering-org"],
+      "author": {
+        "name": "Imran Khan",
+        "url": "https://github.com/Immy6315"
+      },
+      "homepage": "https://github.com/Immy6315/claude-marketplace/tree/main/plugins/eng-org",
+      "repository": "https://github.com/Immy6315/claude-marketplace.git",
+      "license": "MIT",
+      "keywords": ["multi-agent", "engineering-org", "governance", "review-pipeline", "ai-review"],
       "strict": false
     }
   ]
