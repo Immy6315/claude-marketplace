@@ -1,0 +1,31 @@
+{
+  "name": "immy6315-marketplace",
+  "owner": {
+    "name": "Imran Khan",
+    "email": "",
+    "url": "https://github.com/Immy6315"
+  },
+  "metadata": {
+    "description": "Claude Code plugin marketplace by Immy6315 — currently hosts the gr multi-agent PR reviewer.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "gr-reviewer",
+      "source": "./plugins/gr-reviewer",
+      "description": "Multi-agent PR reviewer — runs 7 specialist AI agents in parallel and posts inline GitHub comments.",
+      "version": "0.1.0",
+      "category": "code-review",
+      "tags": ["github", "code-review", "pr", "ai", "claude", "security", "performance"],
+      "author": {
+        "name": "Imran Khan",
+        "url": "https://github.com/Immy6315"
+      },
+      "homepage": "https://github.com/Immy6315/GR",
+      "repository": "https://github.com/Immy6315/GR",
+      "license": "Internal",
+      "keywords": ["pr-review", "code-review", "github-actions", "ai-review"],
+      "strict": false
+    }
+  ]
+}

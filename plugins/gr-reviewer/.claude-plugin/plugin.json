@@ -1,0 +1,21 @@
+{
+  "name": "gr-reviewer",
+  "version": "0.1.0",
+  "description": "Multi-agent PR reviewer that runs 7 specialist AI agents in parallel (security, performance, observability, architecture, code-quality, testing, domain), consolidates their findings, and posts inline review comments on GitHub PRs.",
+  "author": {
+    "name": "Imran Khan",
+    "url": "https://github.com/Immy6315"
+  },
+  "homepage": "https://github.com/Immy6315/GR",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Immy6315/GR.git"
+  },
+  "license": "Internal",
+  "keywords": ["github", "pr-review", "code-review", "ai", "multi-agent"],
+  "commands": "./commands",
+  "agents": "./agents",
+  "hooks": {
+    "PostToolUse": []
+  }
+}
