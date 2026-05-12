@@ -9,8 +9,13 @@ Steps:
 
 1. Spawn a fresh `em` subagent with the requirement verbatim. The
    agent will:
-   - Read `governance/ROLES.md` §2.1, `CLAUDE.md`, and recent
-     conversation log.
+   - Read `governance/ROLES.md` §2.1, `governance/GUARDRAILS.md`,
+     `CLAUDE.md`, and recent conversation log.
+   - **Enforce G-4 (batch cap):** if more than 3 REQs are already
+     in-flight (any REQ whose merge-readiness has not yet flipped
+     to READY-FOR-MERGE), queue this REQ instead of dispatching.
+     Larger batches require explicit owner authorization recorded
+     in `spec.md::§Authorization`.
    - Assign the requirement id `REQ-<YYYYMMDD>-<NN>` (NN = next
      unused number for today).
    - Create `governance/requirements/REQ-<id>/` and write

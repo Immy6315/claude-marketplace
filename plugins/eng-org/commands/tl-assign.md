@@ -26,10 +26,24 @@ Steps:
 
 3. Each Dev agent will:
    - Read its task file end-to-end.
-   - Read its required-reading list.
+   - Read its required-reading list (which now includes
+     `governance/GUARDRAILS.md`).
+   - **FIRST deliverable per G-2:** write
+     `tasks/TASK-<n>-regression-check.md` BEFORE any code change,
+     listing files touched, prior REQs that touched those files,
+     applicable MISTAKES.md entries, and a yes/no preservation
+     answer for each. Empty or missing regression-check BLOCKs the
+     dev-report.
    - Implement exactly the task scope (refuse to drift).
-   - Write `tasks/TASK-<n>-dev-report.md` with what changed,
-     what was refused, MISTAKES checklist ticks, and a
+   - For UI changes: produce `tests/visual-parity-<screen>.png`
+     side-by-side per G-1, and register any intentional divergence
+     in `governance/design-divergence-registry.md`.
+   - For native-dep / `expo.extra` diffs: produce a device-boot
+     smoke result per G-3 (run `npx expo run:ios` or ask the
+     driving engineer).
+   - Write `tasks/TASK-<n>-dev-report.md` with what changed, what
+     was refused, MISTAKES checklist ticks, the regression-check
+     reference, the G-1 / G-3 evidence as applicable, and a
      hand-off note for Test agents.
    - Update the task file frontmatter to `status: implemented`.
 

@@ -7,7 +7,7 @@
   },
   "metadata": {
     "description": "Claude Code plugin marketplace by Immy6315 — multi-agent PR reviewer and 5-role engineering org plugins.",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "plugins": [
     {
@@ -30,8 +30,8 @@
     {
       "name": "eng-org",
       "source": "./plugins/eng-org",
-      "description": "5-role multi-agent engineering org — EM, Tech Leads, Domain Devs, independent Test agents, specialist Reviewers. Drops a complete governance + review pipeline into any project via /eng-org:init.",
-      "version": "0.1.0",
+      "description": "5-role multi-agent engineering org — EM, Tech Leads, Domain Devs, independent Test agents, specialist Reviewers. Drops a complete governance + review pipeline into any project via /eng-org:init. Ships with 6 binding guardrails (G-1..G-6) including visual-parity gate, regression-check.md per task, device-boot smoke for native deps, batch cap, and design-divergence registry.",
+      "version": "0.2.0",
       "category": "engineering-process",
       "tags": ["multi-agent", "orchestration", "governance", "code-review", "ai", "claude", "engineering-org"],
       "author": {

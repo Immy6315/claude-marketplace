@@ -65,6 +65,8 @@ your-project/
 │   ├── TECH_DEBT.md                  # sanctioned waivers
 │   ├── COVERAGE_THRESHOLDS.md        # test gates
 │   ├── ARCHITECTURE.md               # system shape, layering, SLAs
+│   ├── GUARDRAILS.md                 # 6 binding guardrails (v0.2.0+)
+│   ├── design-divergence-registry.md # registered drift from design ref
 │   ├── requirements/README.md        # per-REQ folder layout
 │   └── scripts/check.mjs             # zero-dep validator
 └── .claude/
@@ -151,6 +153,37 @@ When in doubt, prefer Mode B. The cost of unnecessary review is low;
 the cost of skipping necessary review is high. Mode C's safety
 guarantees rest entirely on the eligibility checklist — when in doubt
 about whether a bug fits, escalate.
+
+---
+
+## Guardrails (v0.2.0+, `governance/GUARDRAILS.md`)
+
+Six binding guardrails enforced in addition to ROLES.md. They exist
+because real multi-agent runs hit "fix one thing, break another" until
+the rules below are mechanical:
+
+- **G-1 Perceptual parity gate** — any UI change ships with a
+  side-by-side screenshot (device vs design reference). Unregistered
+  drift BLOCKs merge. Numeric parity ≠ perceptual parity.
+- **G-2 Regression-check.md per task** — every Dev / Test agent's
+  FIRST deliverable is `tasks/TASK-<n>-regression-check.md` listing
+  prior REQs that touched the same files + applicable MISTAKES entries
+  + yes/no preservation answers. Converts passive MISTAKES.md reading
+  into active verification.
+- **G-3 Device-boot smoke (not Metro)** — any native-dep / `expo.extra`
+  diff requires `npx expo run:ios` reaching first-route mount on
+  device. Metro-only is explicitly disallowed because Metro never
+  instantiates native modules.
+- **G-4 Batch cap** — max 3 parallel REQs; larger batches require
+  explicit owner authorization in `spec.md`.
+- **G-5 "Pre-existing" excuse banned** — any failure tolerated must be
+  in `TECH_DEBT.md` with a retirement date ≤ 30 days.
+- **G-6 Design-divergence registry** — intentional drift from the
+  design reference is registered, not prohibited. G-1 consults the
+  registry; registered divergences PASS, unregistered FAIL.
+
+`/eng-org:init` lays both files down. `merge-readiness.md` enforces
+G-1/G-2/G-3/G-5 mechanically; `em-intake.md` enforces G-4.
 
 ---
 

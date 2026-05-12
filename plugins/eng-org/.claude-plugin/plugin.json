@@ -1,6 +1,6 @@
 {
   "name": "eng-org",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "5-role multi-agent engineering org for any project — EM → Tech Leads → Domain Devs → independent Test agents → specialist Reviewer agents. One slash command (/eng-org:init) reads your project, detects stack and domains, then sets up tailored agents, slash commands, and governance files. Stops at production-ready PR approval — deployment stays human-controlled.",
   "author": {
     "name": "Imran Khan",

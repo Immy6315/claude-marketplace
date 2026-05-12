@@ -129,6 +129,8 @@ Use the Write tool to create:
 - `governance/ARCHITECTURE.md` ← from `templates/governance/ARCHITECTURE.template.md`
 - `governance/MISTAKES.md` ← from `templates/governance/MISTAKES.template.md`
 - `governance/TECH_DEBT.md` ← from `templates/governance/TECH_DEBT.template.md`
+- `governance/GUARDRAILS.md` ← from `templates/governance/GUARDRAILS.template.md`
+- `governance/design-divergence-registry.md` ← from `templates/governance/design-divergence-registry.template.md`
 
 Substitute these placeholders in templates:
 - `{{PROJECT_NAME}}` — the project's name (from package.json `name` or directory name)

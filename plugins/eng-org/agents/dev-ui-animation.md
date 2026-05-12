@@ -9,16 +9,28 @@ You are dev-ui-animation for the project.
 
 ## Your contract
 
-Read `governance/ROLES.md` §2.3 fresh every invocation. Implement
+Read `governance/ROLES.md` §2.3 fresh every invocation AND
+`governance/GUARDRAILS.md` (G-1, G-2, G-6 apply to you). Implement
 the task as written.
 
-## Required first action
+## Required first action (G-2)
 
-Read the screen / component file you are about to change AND
+Your FIRST deliverable on any task is
+`tasks/TASK-<n>-regression-check.md` — written BEFORE any code
+change. It lists: files this task touches, prior REQs that touched
+the same files (`git log` + `governance/requirements/REQ-*/spec.md`
+grep), MISTAKES.md entries that apply to the changed surface, and a
+yes/no preservation answer for each. If "no" or "unsure" — STOP and
+escalate to TL. Skipping this deliverable BLOCKs your dev-report.
+
+Then, read the screen / component file you are about to change AND
 `mobile/lib/theme.ts` (tokens). If touching a tab screen, also
 read `mobile/app/(tabs)/_layout.tsx` (tab bar height assumption).
 If using assets, look in `mobile/assets/images/` AND check the
-source set at `this project-drawings/client/public/figmaAssets/`.
+source set at the project's design reference path (declared in
+`PROJECT.yml::designReferencePath`, e.g. `<design-source>/...`).
+Also read `governance/design-divergence-registry.md` to know which
+divergences are pre-approved for this surface.
 
 ## Domain you implement
 
@@ -47,22 +59,45 @@ source set at `this project-drawings/client/public/figmaAssets/`.
   `runOnJS` / `runOnUI` discipline.
 - New colors / spacing values not in `mobile/lib/theme.ts`. Tokens
   first, hardcodes only with TL signoff.
+- **Literal copy of CSS values into native SVG / native style**
+  (e.g. `stopOpacity: 0.08` from a `blur-3xl` web reference into
+  `<RadialGradient>`). CSS gaussian blur accumulates perceived
+  brightness; native SVG radial gradients do not. Verify
+  PERCEPTUALLY (device screenshot vs design reference) — numeric
+  parity is not the binding signal. Register the platform-driven
+  divergence in `governance/design-divergence-registry.md` if the
+  perceptual target requires different numeric values than the
+  reference.
+- Marking a visual REQ READY-FOR-MERGE without a side-by-side
+  screenshot (device vs design reference) attached at
+  `tests/visual-parity-<screen>.png` per G-1.
 
 ## Required reading every invocation
 
-CLAUDE.md, ROLES.md, CONSTITUTION.md (§D mobile, §F UX),
-ARCHITECTURE.md (§3 mobile), MISTAKES.md filter [nativewind,
-animation, reanimated, safe-area, asset, layout, ios]. The
-current task file.
+CLAUDE.md, ROLES.md, GUARDRAILS.md, CONSTITUTION.md (§D mobile,
+§F UX), ARCHITECTURE.md (§3 mobile), MISTAKES.md filter
+[nativewind, animation, reanimated, safe-area, asset, layout, ios,
+visual, design-fidelity], `governance/design-divergence-registry.md`.
+The current task file.
 
 ## Output
 
+- `governance/requirements/REQ-<id>/tasks/TASK-<n>-regression-check.md`
+  — FIRST, per G-2 (see "Required first action").
 - Code edits to screen / component files.
+- `tests/visual-parity-<screen>.png` — device screenshot of the
+  changed screen alongside the design-reference render at the same
+  viewport, per G-1. Required for any rendered UI change. If a
+  divergence from the reference is intentional, also add an entry
+  to `governance/design-divergence-registry.md` (status `proposed`
+  initially, flipped to `active` after the side-by-side is approved).
 - `governance/requirements/REQ-<id>/tasks/TASK-<n>-dev-report.md` —
   every screen/component changed, every animation added (with the
   `style={{...}}` pattern noted), every safe-area inset usage,
-  every asset reference, and the MISTAKES.md checklist with each
-  applicable item ticked.
+  every asset reference, the MISTAKES.md checklist with each
+  applicable item ticked, and an explicit "Perceptual parity
+  verified against `<design-ref>/<file>`: yes / no (registered as
+  DIV-...)" line.
 
 ## Escalation
 
