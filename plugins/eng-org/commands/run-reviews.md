@@ -1,5 +1,5 @@
 ---
-description: Spawn the 5 Reviewer agents in parallel against a requirement's GREEN tasks.
+description: Spawn the 6 Reviewer agents in parallel against a requirement's GREEN tasks.
 ---
 
 You are running reviews for a requirement.
@@ -15,13 +15,19 @@ Steps:
 1. Read every `tasks/TASK-*.md` and the matching test reports
    (5 per task).
 
-2. For each task, spawn the 5 Reviewer agents in parallel (single
-   message, 5 Agent calls):
+2. For each task, spawn the Reviewer agents in parallel (single
+   message). The default set is 5; spawn the 6th — `reviewer-indexes`
+   — additionally whenever the task touches `backend/src/db/schema.ts`,
+   any generated migration in `backend/drizzle/`, or introduces a
+   new hot-path query (`where` / `order by` / `join` on a > 100k-row
+   table). When in doubt, include `reviewer-indexes`.
+
    - `reviewer-architecture`
    - `reviewer-security`
    - `reviewer-performance`
    - `reviewer-standards`
    - `reviewer-observability`
+   - `reviewer-indexes` (schema / hot-path query changes only)
 
    Reviewers are read-only. They consume dev-reports + test
    reports + the actual code; they emit a verdict report.

@@ -74,8 +74,19 @@ your-project/
         └── tl-<domain>.md            # one Tech Lead per declared domain
 ```
 
-The 16 specialist agents (5 Devs, 5 Tests, 5 Reviewers, 1 EM) live
-inside the plugin and are available globally as registered subagents.
+The 18 specialist agents (5 Devs, 5 Tests, 6 Reviewers, 1 EM, **1
+Architect**) live inside the plugin and are available globally as
+registered subagents. Reviewers: architecture, security,
+performance, standards, observability, **indexes** (deep DB-index
+review — necessity, reuse, column-order, partial / INCLUDE /
+CONCURRENTLY, EXPLAIN-ANALYZE).
+
+The **architect** agent is distinct from `reviewer-architecture`.
+It produces **versioned ADR documents** BEFORE any TL decomposes
+tasks — against an explicit scale brief, a banned anti-pattern
+list, and a locked tech stack. Reviewed adversarially in parallel
+by `reviewer-architecture` + `reviewer-security` +
+`reviewer-performance`. See `/eng-org:architect` below.
 
 ---
 
@@ -109,13 +120,20 @@ Auto-escalates to Mode B if any participant detects scope creep.
 For features, schema migrations, new dependencies, user-visible flows,
 auth/PII surface, or governance core changes. The original eng-org flow.
 
+For batches that introduce a **new subsystem**, cross > 3 components,
+exceed today's load by > 10×, propose a new data-layer pattern
+(partitioning, sharding, multi-region), or add an external dependency
+— run `/eng-org:architect <subsystem>` FIRST to produce an ACCEPTED
+ADR. TLs MUST read the ADR before `tl-analyze`.
+
 | Step | Command | What it does |
 |---|---|---|
+| 0 | `/eng-org:architect <subsystem>` | (when triggered) Architect produces a versioned ADR doc against `governance/architecture/briefs/<subsystem>-brief.md`; adversarially reviewed by reviewer-architecture / reviewer-security / reviewer-performance; iterates until all APPROVE → status flips to ACCEPTED |
 | 1 | `/eng-org:em-intake "<requirement>"` | EM creates `REQ-<id>`, triages Mode A vs Mode B |
 | 2 | `/eng-org:tl-analyze REQ-<id>` | TL drafts a tasks plan + risk list |
 | 3 | `/eng-org:tl-assign REQ-<id>` | TL spawns Dev specialists per task |
 | 4 | `/eng-org:run-tests REQ-<id>` | Independent test agents (unit / integration / e2e / regression / load) |
-| 5 | `/eng-org:run-reviews REQ-<id>` | Reviewers (architecture / security / performance / standards / observability) |
+| 5 | `/eng-org:run-reviews REQ-<id>` | Reviewers (architecture / security / performance / standards / observability / indexes) |
 | 6 | `/eng-org:merge-readiness REQ-<id>` | TL aggregates, EM gates |
 | 7 | `/eng-org:em-summary REQ-<id>` | Human-facing summary |
 
