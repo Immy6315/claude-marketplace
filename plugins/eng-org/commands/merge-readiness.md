@@ -43,6 +43,19 @@ Steps:
        unless it is documented in `governance/TECH_DEBT.md` with
        a retirement date ≤ 30 days and the REQ id under which it
        was surfaced.
+     - **G-6 (full-suite GREEN marker):**
+       `governance/requirements/REQ-<id>/test-full-suite-GREEN.md`
+       MUST exist AND its mtime MUST be within the last 24 hours of
+       this `/merge-readiness` invocation. If absent OR stale (>24h)
+       OR if the file shows non-zero exit codes inline, **BLOCK** and
+       remand to TL for a fresh `/eng-org:test-full-suite REQ-<id>`
+       run. No "re-touch the file" workaround — the gate must
+       re-execute `yarn test`. Emit on failure:
+       `BLOCKED (G-6): full-suite GREEN marker stale (>24h) or missing.
+       Re-run /eng-org:test-full-suite REQ-<id> to refresh.`
+       This guardrail applies to Mode B only (Mode A does not touch
+       mobile/ or backend/ source and is not subject to G-6).
+       Added in eng-org v0.5.0 (REQ-20260520-01).
    - Apply the merge-readiness template from ROLES.md §4:
      - Scope summary
      - Files changed list
@@ -50,7 +63,7 @@ Steps:
      - Review signal (5 reports, all APPROVE required; one
        NEEDS-CHANGES allowed only with reason + EM ack)
      - MISTAKES regression sweep result
-     - Guardrail sweep: G-1 / G-2 / G-3 / G-5 outcomes with
+     - Guardrail sweep: G-1 / G-2 / G-3 / G-5 / G-6 outcomes with
        evidence paths
      - Out-of-scope drift declared
      - Verdict: READY-FOR-MERGE / NOT-READY (with reason)
@@ -61,4 +74,4 @@ Steps:
 
 A merge-readiness.md without all 10 signals (5 tests + 5 reviews)
 green, OR missing any applicable guardrail sweep (G-1 / G-2 / G-3
-/ G-5), is invalid; the TL refuses to write READY-FOR-MERGE.
+/ G-5 / G-6), is invalid; the TL refuses to write READY-FOR-MERGE.
