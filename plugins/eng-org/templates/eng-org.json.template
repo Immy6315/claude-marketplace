@@ -2,7 +2,7 @@
   "$schema": "https://github.com/Immy6315/claude-marketplace/eng-org.schema.json",
   "manifestVersion": "1.0",
   "framework": "eng-org",
-  "frameworkVersion": "0.3.0",
+  "frameworkVersion": "0.5.0",
   "generatedAt": "{{DATE}}",
   "org": {
     "name": "{{PROJECT_NAME}}",

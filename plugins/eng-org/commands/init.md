@@ -163,7 +163,7 @@ Example output filename: `.claude/agents/tl-auth.md`.
 
 ```yaml
 name: <project-name>
-framework_version: "0.3.0"
+framework_version: "0.5.0"
 stack:
   backend: <backend-stack-id>
   frontend: <frontend-stack-id>
@@ -193,7 +193,7 @@ Stream the output. If it FAILs, surface the failure and stop.
 Print a summary:
 
 ```
-✅ eng-org v0.3.0 setup complete in <project-name>
+✅ eng-org v0.5.0 setup complete in <project-name>
 
 Created:
   • <N> governance files
