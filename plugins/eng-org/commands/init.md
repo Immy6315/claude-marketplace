@@ -1,7 +1,7 @@
 ---
 description: Initialize the 5-role multi-agent engineering framework in the current project. Reads the project folder, detects stack and domains, then writes tailored agents, slash commands, and governance files.
 argument-hint: [--yes] [--bare]
-allowed-tools: Read, Glob, Grep, Write, Edit, Bash(node:*), Bash(ls:*), Bash(test:*), Bash(mkdir:*), Bash(cp:*), Bash(cat:*), Bash(pwd)
+allowed-tools: Read, Glob, Grep, Write, Edit, Bash(node:*), Bash(ls:*), Bash(test:*), Bash(mkdir:*), Bash(cp:*), Bash(chmod:*), Bash(cat:*), Bash(pwd)
 ---
 
 # eng-org init — set up the multi-agent engineering framework
@@ -149,11 +149,21 @@ Example output filename: `.claude/agents/tl-auth.md`.
 
 **D. CLAUDE.md** — read `templates/CLAUDE.template.md`, substitute placeholders, write to `CLAUDE.md`. If `CLAUDE.md` already exists, do not overwrite — instead inject the framework block between `<!-- FRAMEWORK:START -->` and `<!-- FRAMEWORK:END -->` markers (creating them if absent at the end of the file).
 
-**E. PROJECT.yml** — write a YAML record of detected configuration so future `/eng-org:update` can re-run deterministically:
+**E. Portability pillars (project root)** — these make the project understandable to *any* AI/engineer, not just Claude Code:
+
+- `AGENTS.md` ← from `templates/AGENTS.template.md`. The universal, tool-agnostic entry point. Substitute the same placeholders as the governance docs. If `AGENTS.md` already exists, do not overwrite — leave it and note in the report.
+- `eng-org.json` ← from `templates/eng-org.json.template`. The machine-readable manifest (org info, stack, governance doc paths, and an initially-empty project registry). Substitute `{{PROJECT_NAME}}`, `{{DATE}}`, `{{BACKEND_STACK}}`, `{{FRONTEND_STACK}}`, and `{{DOMAINS_JSON}}`. For `{{DOMAINS_JSON}}`, emit one JSON object per inferred domain, comma-separated, e.g. `{"id":"auth","owns":["backend/src/trpc/routers/auth.ts"]},{"id":"billing","owns":["backend/src/trpc/routers/billing.ts"]}`. If there are no domains, substitute an empty string so `"domains": []`. Validate the result parses as JSON (`node -e "JSON.parse(require('fs').readFileSync('eng-org.json'))"`) before continuing. If `eng-org.json` already exists, do not overwrite — note in the report.
+
+**F. Multi-project scaffolder** — copy the standalone scaffolder + per-project templates so the project can grow a multi-project registry without the plugin installed:
+
+- `scripts/new-project.sh` ← copy from `${CLAUDE_PLUGIN_ROOT}/scripts/new-project.sh`, then `chmod +x`.
+- `scripts/eng-org-templates/project/` ← copy the whole `${CLAUDE_PLUGIN_ROOT}/templates/project/` tree to sit next to the script. The script auto-discovers templates at `<script>/eng-org-templates/project`, so a standalone `bash scripts/new-project.sh <name> "<desc>"` works with **no env vars** — even after the project is handed to someone without the plugin installed. (When `/eng-org:new-project` drives it, it overrides `ENG_ORG_TEMPLATES` to the live plugin copy instead.)
+
+**G. PROJECT.yml** — write a YAML record of detected configuration so future `/eng-org:update` can re-run deterministically:
 
 ```yaml
 name: <project-name>
-framework_version: "0.1.0"
+framework_version: "0.3.0"
 stack:
   backend: <backend-stack-id>
   frontend: <frontend-stack-id>
@@ -183,12 +193,15 @@ Stream the output. If it FAILs, surface the failure and stop.
 Print a summary:
 
 ```
-✅ eng-org v0.1.0 setup complete in <project-name>
+✅ eng-org v0.3.0 setup complete in <project-name>
 
 Created:
   • <N> governance files
   • <N> per-domain TL agents
   • CLAUDE.md (framework section)
+  • AGENTS.md (universal AI entry point)
+  • eng-org.json (machine-readable manifest + project registry)
+  • scripts/new-project.sh + scripts/eng-org-templates/ (multi-project scaffolder)
   • PROJECT.yml
 
 Skipped (already exist):

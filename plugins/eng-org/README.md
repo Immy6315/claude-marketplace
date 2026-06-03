@@ -44,7 +44,10 @@ That single command:
 3. Shows you what it found and asks for confirmation.
 4. Generates a tailored `governance/` tree, `CLAUDE.md`, `PROJECT.yml`,
    and one `tl-<domain>.md` Tech Lead agent per domain.
-5. Runs the validator and prints a final report.
+5. Lays down the **portability layer** (v0.5.0+): `AGENTS.md` universal
+   entry point, machine-readable `eng-org.json` manifest, and the
+   `scripts/new-project.sh` multi-project scaffolder.
+6. Runs the validator and prints a final report.
 
 If your project is already initialised it refuses and points you at
 `/eng-org:doctor` and `/eng-org:update`.
@@ -55,6 +58,8 @@ If your project is already initialised it refuses and points you at
 
 ```
 your-project/
+├── AGENTS.md                         # universal AI entry point (read FIRST)
+├── eng-org.json                      # machine-readable manifest + project registry
 ├── PROJECT.yml                       # framework configuration record
 ├── CLAUDE.md                         # session-binding rules (FRAMEWORK block)
 ├── governance/
@@ -69,6 +74,9 @@ your-project/
 │   ├── design-divergence-registry.md # registered drift from design ref
 │   ├── requirements/README.md        # per-REQ folder layout
 │   └── scripts/check.mjs             # zero-dep validator
+├── scripts/
+│   ├── new-project.sh                # standalone multi-project scaffolder
+│   └── eng-org-templates/project/    # per-project doc templates (PRD, ADR log, …)
 └── .claude/
     └── agents/
         └── tl-<domain>.md            # one Tech Lead per declared domain
@@ -87,6 +95,49 @@ tasks — against an explicit scale brief, a banned anti-pattern
 list, and a locked tech stack. Reviewed adversarially in parallel
 by `reviewer-architecture` + `reviewer-security` +
 `reviewer-performance`. See `/eng-org:architect` below.
+
+---
+
+## The portability layer (v0.5.0+) — pick the project up cold
+
+Governance docs get a new AI/engineer ~70% of the way. The last 30% — knowing
+*where to start*, parsing the project *reliably*, and recovering the *why/when*
+behind each decision — is what the portability layer adds. Three pillars, all
+plain files in git, no dependency on any agent's private memory:
+
+1. **`AGENTS.md`** — a tool-agnostic universal entry point. Claude Code
+   auto-loads `CLAUDE.md`; other tools conventionally look for `AGENTS.md`.
+   This file points every one of them at the same context in the same order,
+   so a fresh AI knows exactly where to start.
+2. **`eng-org.json`** — a machine-readable manifest. JSON, not prose, so any
+   tool parses the stack, domains, governance doc paths, and the multi-project
+   registry instantly and reliably.
+3. **`DECISIONS.md`** (per project) — a dated, **append-only** ADR log. Captures
+   the **WHY** and **WHEN** that prose docs lose over time. Never edit a past
+   entry; append one that supersedes it.
+
+### Multi-project registry + scaffolder
+
+One workspace can govern many projects under `projects/<name>/`. Scaffold a new
+one — docs (PRD, ARCHITECTURE, SYSTEM-DESIGN, TECH-DOC, TASK-LIST, TEST-PLAN),
+`tests/`, `src/`, a dated `DECISIONS.md`, and `meta.json`, plus registration in
+`projects/INDEX.md` and `eng-org.json` — with a single command:
+
+```
+/eng-org:new-project <name> "<one-line description>"
+```
+
+The same logic ships as a standalone `scripts/new-project.sh` (only dependency:
+`python3`) so the workspace keeps working even when handed to someone without
+the plugin installed.
+
+| Question | Where the answer lives |
+|----------|------------------------|
+| **WHAT** was built? | `README.md`, `docs/PRD.md` |
+| **WHY** this way? | `docs/ARCHITECTURE.md`, `DECISIONS.md` |
+| **WHEN** did decisions happen? | `DECISIONS.md`, `eng-org.json` |
+| **HOW** is it built / run? | `docs/TECH-DOC.md`, `docs/SYSTEM-DESIGN.md` |
+| Everything, machine-readable | `eng-org.json`, `meta.json` |
 
 ---
 
@@ -147,6 +198,7 @@ ADR. TLs MUST read the ADR before `tl-analyze`.
 |---|---|
 | `/eng-org:doctor` | Read-only audit — verifies every framework file is present and consistent with `PROJECT.yml`. |
 | `/eng-org:init` | One-time install in a project. Refuses to run twice. |
+| `/eng-org:new-project <name> "<desc>"` | Scaffold a new project under the multi-project registry (docs + tests + dated DECISIONS.md + meta.json; registers in `projects/INDEX.md` and `eng-org.json`). |
 
 ---
 

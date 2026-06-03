@@ -1,0 +1,18 @@
+{
+  "name": "{{PROJECT_NAME}}",
+  "description": "{{PROJECT_DESC}}",
+  "status": "planning",
+  "created": "{{DATE}}",
+  "updated": "{{DATE}}",
+  "docs": {
+    "prd": "docs/PRD.md",
+    "architecture": "docs/ARCHITECTURE.md",
+    "systemDesign": "docs/SYSTEM-DESIGN.md",
+    "techDoc": "docs/TECH-DOC.md",
+    "taskList": "docs/TASK-LIST.md",
+    "testPlan": "docs/TEST-PLAN.md"
+  },
+  "decisions": "DECISIONS.md",
+  "src": "src/",
+  "tests": "tests/"
+}

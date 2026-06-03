@@ -1,0 +1,37 @@
+{
+  "$schema": "https://github.com/Immy6315/claude-marketplace/eng-org.schema.json",
+  "manifestVersion": "1.0",
+  "framework": "eng-org",
+  "frameworkVersion": "0.3.0",
+  "generatedAt": "{{DATE}}",
+  "org": {
+    "name": "{{PROJECT_NAME}}",
+    "entrypoint": "AGENTS.md",
+    "humanRules": "CLAUDE.md"
+  },
+  "stack": {
+    "backend": "{{BACKEND_STACK}}",
+    "frontend": "{{FRONTEND_STACK}}"
+  },
+  "domains": [{{DOMAINS_JSON}}],
+  "governance": {
+    "roles": "governance/ROLES.md",
+    "constitution": "governance/CONSTITUTION.md",
+    "reviewProcess": "governance/REVIEW_PROCESS.md",
+    "architecture": "governance/ARCHITECTURE.md",
+    "mistakes": "governance/MISTAKES.md",
+    "techDebt": "governance/TECH_DEBT.md",
+    "coverageThresholds": "governance/COVERAGE_THRESHOLDS.md",
+    "guardrails": "governance/GUARDRAILS.md",
+    "requirements": "governance/requirements/",
+    "conversations": "governance/conversations/",
+    "validator": "governance/scripts/check.mjs"
+  },
+  "context": {
+    "what": ["README.md", "governance/requirements/"],
+    "why": ["governance/ARCHITECTURE.md", "DECISIONS.md"],
+    "when": ["DECISIONS.md", "governance/conversations/"],
+    "how": ["README.md", "governance/ARCHITECTURE.md"]
+  },
+  "projects": []
+}
