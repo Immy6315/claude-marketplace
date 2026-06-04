@@ -24,7 +24,11 @@ WHEN each decision was made.
    rules specifically.
 5. **`governance/MISTAKES.md`** — what has been broken before. Do not repeat it.
 6. **`governance/ARCHITECTURE.md`** — the system shape and layering.
-7. Most recent files in **`governance/conversations/`** and
+7. **`governance/graphs/`** — Mermaid diagrams of how everything *links*
+   (module/layer dependencies, domain & data-model relationships, the
+   requirement→task DAG, the role pipeline). Start here for a fast visual map of
+   the project's relationships. Generated/refreshed by `/eng-org:graphyfy`.
+8. Most recent files in **`governance/conversations/`** and
    **`governance/requirements/`** — the live "why/when" of in-flight work.
 
 ## The context model — where each answer lives
@@ -35,6 +39,7 @@ WHEN each decision was made.
 | **WHY** this way? | `governance/ARCHITECTURE.md`, per-REQ `DECISIONS.md` / ADRs |
 | **WHEN** did decisions happen? | `DECISIONS.md`, `eng-org.json`, `governance/conversations/` |
 | **HOW** is it built/run? | `README.md`, `governance/ARCHITECTURE.md` |
+| **How does it all LINK?** | `governance/graphs/` (Mermaid — run `/eng-org:graphyfy` to refresh) |
 | Current plan / state | `governance/requirements/` |
 | How it's tested | `governance/COVERAGE_THRESHOLDS.md`, test suites |
 | Everything, machine-readable | `eng-org.json` |

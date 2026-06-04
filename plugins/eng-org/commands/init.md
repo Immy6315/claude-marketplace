@@ -163,7 +163,7 @@ Example output filename: `.claude/agents/tl-auth.md`.
 
 ```yaml
 name: <project-name>
-framework_version: "0.5.0"
+framework_version: "0.6.0"
 stack:
   backend: <backend-stack-id>
   frontend: <frontend-stack-id>
@@ -193,7 +193,7 @@ Stream the output. If it FAILs, surface the failure and stop.
 Print a summary:
 
 ```
-✅ eng-org v0.5.0 setup complete in <project-name>
+✅ eng-org v0.6.0 setup complete in <project-name>
 
 Created:
   • <N> governance files
@@ -212,7 +212,9 @@ Validator: PASS
 Next steps:
   1. Open governance/CONSTITUTION.md and fill in §A–§G with your project rules
   2. Run /eng-org:pilot-check to verify the framework wiring
-  3. When you're ready for your first real change:
+  3. Run /eng-org:graphyfy to draw the linking graphs (governance/graphs/) so any
+     AI/engineer can see how the project connects
+  4. When you're ready for your first real change:
        /eng-org:em-intake "your first requirement"
 
 Docs: https://github.com/Immy6315/claude-marketplace/tree/main/plugins/eng-org

@@ -72,6 +72,7 @@ your-project/
 │   ├── ARCHITECTURE.md               # system shape, layering, SLAs
 │   ├── GUARDRAILS.md                 # 6 binding guardrails (v0.2.0+)
 │   ├── design-divergence-registry.md # registered drift from design ref
+│   ├── graphs/                       # Mermaid linking-graphs (v0.6.0+, /eng-org:graphyfy)
 │   ├── requirements/README.md        # per-REQ folder layout
 │   └── scripts/check.mjs             # zero-dep validator
 ├── scripts/
@@ -199,6 +200,14 @@ ADR. TLs MUST read the ADR before `tl-analyze`.
 | `/eng-org:doctor` | Read-only audit — verifies every framework file is present and consistent with `PROJECT.yml`. |
 | `/eng-org:init` | One-time install in a project. Refuses to run twice. |
 | `/eng-org:new-project <name> "<desc>"` | Scaffold a new project under the multi-project registry (docs + tests + dated DECISIONS.md + meta.json; registers in `projects/INDEX.md` and `eng-org.json`). |
+
+---
+
+## Skills
+
+| Skill | Purpose |
+|---|---|
+| `/eng-org:graphyfy` | Generate/refresh Mermaid **linking-graphs** in `governance/graphs/` so any AI or engineer can *see* how the project connects — module/layer dependencies, domain & data-model relationships, the requirement→task dependency DAG, and the role pipeline. Idempotent: creates the graphs if missing, updates them in place if present. `AGENTS.md` points cold-pickup readers at these graphs. |
 
 ---
 
