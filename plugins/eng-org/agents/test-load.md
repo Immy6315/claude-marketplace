@@ -16,7 +16,20 @@ a hot path, or the mobile bundle.
 
 ## Required first action
 
-Read the dev-report. Identify hot paths touched. Read
+**Docker preflight (when you run, not when you skip).** If the
+change is pure UI / pure docs you skip-with-note and need no
+daemon. When you DO run a DB / hot-path workload, your tier needs
+a live Docker daemon (testcontainers). The `/run-tests`
+orchestrator normally brings Docker up before spawning you and
+tears it down after — do NOT stop Docker yourself. If `docker info`
+fails, start it and wait, then proceed:
+
+```bash
+docker info >/dev/null 2>&1 || { open -a Docker 2>/dev/null || sudo systemctl start docker; \
+  for i in $(seq 1 40); do docker info >/dev/null 2>&1 && break; sleep 3; done; }
+```
+
+Then: read the dev-report. Identify hot paths touched. Read
 ARCHITECTURE.md §5 for SLA targets (p50/p95/p99 budgets per
 endpoint).
 

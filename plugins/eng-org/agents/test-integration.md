@@ -15,7 +15,19 @@ whole point of this tier.
 
 ## Required first action
 
-Read the dev-report. Read the router file under test. Read
+**Docker preflight.** Your tier needs a live Docker daemon
+(testcontainers spins its own Postgres/Redis). The `/run-tests`
+orchestrator normally brings Docker up before spawning you and
+tears it down after — do NOT stop Docker yourself when done.
+But verify it is actually up before starting: if `docker info`
+fails, start it yourself and wait for ready, then proceed:
+
+```bash
+docker info >/dev/null 2>&1 || { open -a Docker 2>/dev/null || sudo systemctl start docker; \
+  for i in $(seq 1 40); do docker info >/dev/null 2>&1 && break; sleep 3; done; }
+```
+
+Then: read the dev-report. Read the router file under test. Read
 `backend/src/db/schema.ts` for any tables touched. Read
 `backend/test/setup.ts` (or equivalent) to understand existing
 test fixtures.
