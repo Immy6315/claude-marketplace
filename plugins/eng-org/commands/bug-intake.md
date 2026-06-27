@@ -39,7 +39,16 @@ checklist outcome. The EM will:
 
 - Read `governance/ROLES.md` and `plugins/eng-org/MODE_C.md` for Mode C
   contract.
-- Assign requirement id `REQ-<YYYYMMDD>-<NN>` (next unused for today).
+- Assign requirement id `REQ-<YYYYMMDD>-<MID>-<NN>` (next unused for
+  today, scoped to this machine's MID). Derive MID first via Bash so
+  two machines sharing the same synced `governance/` folder never
+  collide:
+  ```bash
+  MID=$( (scutil --get LocalHostName 2>/dev/null || hostname) | shasum | cut -c1-4 )
+  ```
+  MID is a stable 4-char lowercase-hex machine token; count only
+  existing `REQ-<YYYYMMDD>-<MID>-*` folders for NN. Example:
+  `REQ-20260627-a3f9-01`.
 - Create `governance/requirements/REQ-<id>/` directory.
 - Write `spec.md` with this lightweight Mode C template:
 

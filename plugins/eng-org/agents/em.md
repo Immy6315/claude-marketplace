@@ -17,7 +17,18 @@ disagrees with ROLES.md, ROLES.md wins.
 
 1. **Receive a requirement** from Imran (the human). Capture it
    verbatim in `governance/requirements/REQ-<id>/spec.md`. Assign the
-   id `REQ-<YYYYMMDD>-<NN>` (NN = next available number that day).
+   id `REQ-<YYYYMMDD>-<MID>-<NN>` where `MID` is this machine's stable
+   id and `NN` is the next available number that day **for this MID**.
+   Derive MID via Bash before assigning the id:
+   ```bash
+   MID=$( (scutil --get LocalHostName 2>/dev/null || hostname) | shasum | cut -c1-4 )
+   ```
+   `MID` is a 4-char lowercase-hex token unique to the machine
+   (same machine → same MID; different machine → different MID), so
+   two machines sharing the same synced `governance/` folder can each
+   open a requirement on the same day without colliding. Count only
+   existing `REQ-<YYYYMMDD>-<MID>-*` folders for `NN` (start `01`).
+   Example: `REQ-20260627-a3f9-01`.
 2. **Triage Mode A vs Mode B** per `ROLES.md` §6 / `CLAUDE.md` §6.
    Record the decision and the reasoning in `spec.md`.
 3. **Assign TLs** based on which subsystems are touched. See ROLES.md

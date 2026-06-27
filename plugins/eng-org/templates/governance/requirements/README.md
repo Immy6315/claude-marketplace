@@ -4,7 +4,17 @@ One folder per Mode B requirement. Folder name is the requirement id.
 
 ## Naming
 
-`REQ-<YYYYMMDD>-<NN>` — e.g., `REQ-20260512-01`. EM assigns the id at intake.
+`REQ-<YYYYMMDD>-<MID>-<NN>` — e.g., `REQ-20260512-a3f9-01`. EM assigns
+the id at intake.
+
+- `YYYYMMDD` — the intake date.
+- `MID` — a stable 4-char lowercase-hex token unique to the machine
+  that opened the requirement (derived from its hostname:
+  `(scutil --get LocalHostName 2>/dev/null || hostname) | shasum | cut -c1-4`).
+  This keeps two machines that share the same synced `governance/`
+  folder from colliding when both open a requirement on the same day.
+- `NN` — next unused 2-digit number for that day, scoped to that MID
+  (count only `REQ-<YYYYMMDD>-<MID>-*` folders), starting at `01`.
 
 ## Layout
 

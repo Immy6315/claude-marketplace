@@ -279,7 +279,8 @@ section is the **operational playbook** — what runs in what order.
 1. EM intake
    • EM (main session, or invoked subagent) reads Imran's request.
    • Triage: Mode A vs Mode B (see ROLES.md §6).
-   • Assign requirement id REQ-<YYYYMMDD-NN>.
+   • Assign requirement id REQ-<YYYYMMDD>-<MID>-<NN> (MID = stable
+     4-char machine token so synced machines never collide).
    • Write governance/requirements/REQ-<id>/spec.md
        — what, why, success criteria, assigned TLs.
    • Slash command: /em-intake

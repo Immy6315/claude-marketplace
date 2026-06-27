@@ -16,8 +16,20 @@ Steps:
      to READY-FOR-MERGE), queue this REQ instead of dispatching.
      Larger batches require explicit owner authorization recorded
      in `spec.md::§Authorization`.
-   - Assign the requirement id `REQ-<YYYYMMDD>-<NN>` (NN = next
-     unused number for today).
+   - **Derive this machine's id (MID)** first, so two machines that
+     share the same synced `governance/` folder never collide on a
+     requirement id. Run via Bash:
+     ```bash
+     MID=$( (scutil --get LocalHostName 2>/dev/null || hostname) | shasum | cut -c1-4 )
+     ```
+     `MID` is a stable 4-char lowercase-hex token unique to the
+     machine (derived from its hostname). Same machine → same MID
+     every time; two different machines → different MID.
+   - Assign the requirement id `REQ-<YYYYMMDD>-<MID>-<NN>` where
+     `NN` = next unused 2-digit number for today **scoped to this
+     machine's MID** (i.e. count only existing folders matching
+     `REQ-<YYYYMMDD>-<MID>-*`, start at `01`). Example:
+     `REQ-20260627-a3f9-01`. Never reuse another machine's MID.
    - Create `governance/requirements/REQ-<id>/` and write
      `spec.md` per the template in `governance/requirements/README.md`.
    - Triage Mode A vs Mode B per ROLES.md §6 and record the
