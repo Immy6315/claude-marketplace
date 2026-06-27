@@ -121,6 +121,7 @@ Use the Write tool to create:
 - `governance/ROLES.md` ← `${CLAUDE_PLUGIN_ROOT}/templates/governance/ROLES.md`
 - `governance/REVIEW_PROCESS.md` ← `${CLAUDE_PLUGIN_ROOT}/templates/governance/REVIEW_PROCESS.md`
 - `governance/requirements/README.md` ← `${CLAUDE_PLUGIN_ROOT}/templates/governance/requirements/README.md`
+- `governance/capabilities/README.md` ← `${CLAUDE_PLUGIN_ROOT}/templates/governance/capabilities/README.md`
 - `governance/scripts/check.mjs` ← `${CLAUDE_PLUGIN_ROOT}/templates/governance/scripts/check.mjs`
 
 **B. Templated governance docs (only if they don't exist)** — read template, substitute placeholders, write:

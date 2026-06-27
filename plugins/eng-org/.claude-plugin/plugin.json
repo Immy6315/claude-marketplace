@@ -1,6 +1,6 @@
 {
   "name": "eng-org",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "5-role multi-agent engineering org for any project — EM → Tech Leads → Domain Devs → independent Test agents → specialist Reviewer agents, plus a system Architect that produces versioned ADRs before decomposition. /eng-org:init reads your project, detects stack and domains, then sets up tailored agents, slash commands, governance files with 6 binding guardrails, and a portable context layer (AGENTS.md universal entry point, machine-readable eng-org.json manifest, dated DECISIONS.md logs, a multi-project scaffolder, and the /eng-org:graphyfy skill that draws Mermaid linking-graphs of the whole project) so any AI or engineer can pick the project up cold. Stops at production-ready PR approval — deployment stays human-controlled.",
   "author": {
     "name": "Imran Khan",

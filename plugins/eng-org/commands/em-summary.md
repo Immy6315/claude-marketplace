@@ -24,6 +24,12 @@ Steps:
      - Risk + rollback
      - "Imran: please review and approve merge or reject."
 
+   - **Flip the capabilities ledger.** Update this REQ's line in
+     `governance/capabilities/<MID>.md` from `status: in-progress` to
+     `status: shipped` (use the same MID embedded in the REQ id; only
+     edit your own machine's ledger file). This keeps the
+     cross-machine duplicate-check ledger accurate.
+
 2. After em-summary is written, print its path and stop. Do NOT
    merge. Do NOT push. Imran approves merge in human terminal.
 

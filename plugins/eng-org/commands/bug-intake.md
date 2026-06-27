@@ -39,6 +39,12 @@ checklist outcome. The EM will:
 
 - Read `governance/ROLES.md` and `plugins/eng-org/MODE_C.md` for Mode C
   contract.
+- **Duplicate-check first.** Read every `governance/capabilities/*.md`
+  ledger (all machines) and scan existing `requirements/*/spec.md`
+  titles. If this bug/fix overlaps something already shipped or
+  in-progress (e.g. it was already fixed on another synced machine),
+  surface the match and confirm with the user before opening a new
+  REQ. Only continue if there is no match or the user opts to proceed.
 - Assign requirement id `REQ-<YYYYMMDD>-<MID>-<NN>` (next unused for
   today, scoped to this machine's MID). Derive MID first via Bash so
   two machines sharing the same synced `governance/` folder never
@@ -90,6 +96,10 @@ checklist outcome. The EM will:
 
 - Append to `governance/conversations/<today>.md`:
   `REQ-<id> bug intake — <one-line summary> — TL: X — mode: C.`
+- Append one capability line to `governance/capabilities/<MID>.md`
+  (create if absent): `- [REQ-<id>] <bug-fix title> — <one-line> —
+  status: in-progress — date: <YYYY-MM-DD>`. On verify/close it flips
+  to `shipped` (or `rejected`).
 
 ### 3. Surface the spec and stop
 

@@ -16,6 +16,12 @@ the id at intake.
 - `NN` — next unused 2-digit number for that day, scoped to that MID
   (count only `REQ-<YYYYMMDD>-<MID>-*` folders), starting at `01`.
 
+Before opening a new requirement the EM runs a **duplicate-check**
+against the `governance/capabilities/` ledger (see that folder's
+README) so a feature already shipped on another synced machine is not
+rebuilt. Each REQ also gets one line in `governance/capabilities/<MID>.md`
+(`in-progress` at intake → `shipped` at em-summary).
+
 ## Layout
 
 ```
