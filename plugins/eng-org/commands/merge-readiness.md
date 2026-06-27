@@ -59,6 +59,19 @@ Steps:
    merge-readiness.md and tell the user "Run `/em-summary REQ-<id>`
    for the 1-page Imran view."
 
+4. **Context sync (auto, self-skipping).** Merge-readiness is the point
+   where the REQ's full artifact set (tl-analysis, dev-reports, test
+   reports, review reports, merge-readiness verdict) is complete and
+   worth distributing to other machines. Run the context sync exactly as
+   defined in `commands/sync.md` (resolve repo root → guard on git repo
+   + `origin` remote → `pull --ff-only` → `add -A` → commit → push),
+   using a message like `REQ-<id> merge-readiness <verdict>`. **It
+   self-skips silently if this project is not a git repo with a
+   remote** — never block or error on projects with no context repo.
+   This pushes governance artifacts only; it never touches code repos
+   (they are gitignored) and never performs the production merge, which
+   stays human-gated.
+
 A merge-readiness.md without all 10 signals (5 tests + 5 reviews)
 green, OR missing any applicable guardrail sweep (G-1 / G-2 / G-3
 / G-5), is invalid; the TL refuses to write READY-FOR-MERGE.

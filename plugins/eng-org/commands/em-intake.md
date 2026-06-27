@@ -59,4 +59,13 @@ Steps:
    same response. Surface the spec to the user and wait for their
    confirmation that the triage is correct.
 
+3. **Context sync (auto, self-skipping).** A new REQ just landed on
+   disk (`spec.md` + the `capabilities/<MID>.md` ledger line), so other
+   synced machines should see it. Run the context sync exactly as
+   defined in `commands/sync.md` (resolve repo root → guard on git repo
+   + `origin` remote → `pull --ff-only` → `add -A` → commit → push),
+   using a message like `REQ-<id> intake`. **It self-skips silently if
+   this project is not a git repo with a remote** — so on projects with
+   no context repo this step is a no-op and must never block or error.
+
 The user's requirement: $ARGUMENTS
