@@ -70,11 +70,12 @@ your-project/
 │   ├── TECH_DEBT.md                  # sanctioned waivers
 │   ├── COVERAGE_THRESHOLDS.md        # test gates
 │   ├── ARCHITECTURE.md               # system shape, layering, SLAs
-│   ├── GUARDRAILS.md                 # 8 binding guardrails (v0.2.0+, G-7/G-8 in v0.11.0+)
+│   ├── GUARDRAILS.md                 # 9 binding guardrails (G-7/G-8 in v0.11.0+, G-9 in v0.12.0+)
 │   ├── design-divergence-registry.md # registered drift from design ref (G-6)
 │   ├── api-contract-registry.md      # registered API response-contract changes (G-8, v0.11.0+)
 │   ├── api-contracts/                # stored per-endpoint response baselines (G-7, v0.11.0+)
 │   ├── graphs/                       # Mermaid linking-graphs (v0.6.0+, /eng-org:graphyfy)
+│   ├── autopilot/PROG-<id>/          # Mode L program state (v0.12.0+): SPEC, acceptance-criteria 🔒, PLAN, STATE, ASSUMPTIONS, LEARNINGS
 │   ├── requirements/README.md        # per-REQ folder layout
 │   └── scripts/
 │       ├── check.mjs                 # zero-dep validator
@@ -146,10 +147,10 @@ the plugin installed.
 
 ---
 
-## Three pipelines, by risk profile
+## Four pipelines, by risk profile
 
-eng-org gives you three flows. The EM picks at intake based on what the
-change actually touches.
+eng-org gives you four flows. The EM picks A/B/C at intake based on
+what the change actually touches; Mode L is human-activated only.
 
 ### Mode A — Maker → Checker (trivial)
 
@@ -195,6 +196,27 @@ ADR. TLs MUST read the ADR before `tl-analyze`.
 
 `/eng-org:pilot-check` is a self-test of the framework on its own files.
 
+### Mode L — Autonomous build-until-done loop (NEW in 0.12.0)
+
+For **whole programs**: "build me this software" with a detailed brief.
+The loop decomposes into milestones/REQs, drives the Mode B pipeline
+per REQ, fixes RED/BLOCK iteratively, learns per milestone
+(retro → validated LEARNINGS), revises its own architecture decisions
+(versioned ADRs), and runs until the acceptance criteria are met —
+with human input only at the start (gate) and at checkpoints/merges.
+See `MODE_L.md` for the full protocol.
+
+| Step | Command | What it does |
+|---|---|---|
+| 1 | `/eng-org:autopilot "<software brief>"` | **G-9 clarity gate**: 8-item scorecard (machine-checkable acceptance criteria, locked stack, NON-goals, dependency pre-flight, priority, budget, design reference, feasibility). Interviews you until 8/8, records authority grants, architect plan preview → your explicit approval. |
+| 2 | `bash scripts/autopilot-driver.sh PROG-<id>` | External crash-safe loop: each iteration invokes `/eng-org:autopilot-iterate` in a **fresh context** (no drift/rot), rehydrating from `governance/autopilot/PROG-<id>/` state files. |
+| 3 | `/eng-org:autopilot-iterate PROG-<id>` | One work item per iteration through the normal pipeline. Mid-loop ambiguity: **decide-and-log** (ASSUMPTIONS.md) or **park** — never asks you. Circuit breaker: 3× same fix fingerprint or budget exhausted → park; all parked → HALT + escalation report. |
+
+Hard lines: the loop never edits `SPEC.md` / `acceptance-criteria.md` /
+pre-program baseline tests (immutable zone — anti-reward-hacking), never
+merges (§H rule 47), and never relaxes a guardrail. Mode L is never a
+triage outcome — the EM can only *recommend* it; a human activates it.
+
 ---
 
 ## Maintenance commands
@@ -232,6 +254,12 @@ ADR. TLs MUST read the ADR before `tl-analyze`.
   user-visible flows, or governance core (CONSTITUTION, ROLES, agent
   definitions). Also: any bug whose fix exceeds Mode C eligibility.
 
+**Mode L (autopilot)** — a whole software/program, not a change:
+- Multi-milestone scope that would decompose into 4+ REQs
+- Activated ONLY by the human via `/eng-org:autopilot` (EM may recommend,
+  never activate)
+- Requires the G-9 clarity gate at 8/8 before any work starts
+
 When in doubt, prefer Mode B. The cost of unnecessary review is low;
 the cost of skipping necessary review is high. Mode C's safety
 guarantees rest entirely on the eligibility checklist — when in doubt
@@ -241,7 +269,7 @@ about whether a bug fits, escalate.
 
 ## Guardrails (v0.2.0+, `governance/GUARDRAILS.md`)
 
-Eight binding guardrails enforced in addition to ROLES.md. They exist
+Nine binding guardrails enforced in addition to ROLES.md. They exist
 because real multi-agent runs hit "fix one thing, break another" until
 the rules below are mechanical:
 
@@ -275,6 +303,13 @@ the rules below are mechanical:
   are registered in `governance/api-contract-registry.md` (append-only,
   breaking-change flagged), not prohibited. G-7 consults it; registered
   changes PASS, unregistered FAIL.
+- **G-9 Clarity gate for Mode L** (v0.12.0+) — no autonomous loop
+  without clarity: 8-item scorecard (incl. feasibility + dependency
+  pre-flight) must be 8/8 before the loop starts; the loop's SPEC,
+  acceptance criteria, and pre-program baseline tests are an
+  **immutable zone** (anti-reward-hacking); a fingerprint-based
+  **circuit breaker** parks doom-looping REQs instead of retrying
+  forever.
 
 `/eng-org:init` lays these files down. `merge-readiness.md` enforces
 G-1/G-2/G-3/G-5/G-7 mechanically; `em-intake.md` enforces G-4. The G-7

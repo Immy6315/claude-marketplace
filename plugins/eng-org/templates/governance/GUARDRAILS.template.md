@@ -258,6 +258,63 @@ changed the contract by accident."
 
 ---
 
+## G-9 (gate). Clarity Gate — no autonomous loop without clarity
+
+Applies to **Mode L (autopilot)** only. An autonomous build-until-done
+loop may NOT start until the program brief passes a **clarity
+scorecard**, every item PASS:
+
+| # | Clarity item | Why it blocks |
+|---|---|---|
+| 1 | **Machine-checkable acceptance criteria** — each criterion is verifiable by a test, script, or observable behavior ("logged-out user does not see Install button" ✅, "nice UX" ❌) | Without them the loop cannot know when it is DONE — it either never terminates or declares premature victory |
+| 2 | **Tech stack locked** — language, framework, DB, runtime explicitly named | Otherwise the loop picks and mid-flight changes its own stack |
+| 3 | **Scope boundaries + explicit NON-goals** | Prevents scope creep / feature invention |
+| 4 | **External dependencies verified available** — creds, API keys, test envs, ports checked NOW (pre-flight), not discovered mid-loop | A missing credential at hour 3 forces a workaround ("kachra") or a dead loop |
+| 5 | **Priority order** — milestone sequence given, or "planner's judgment" explicitly granted | Otherwise the loop may build the wrong thing first |
+| 6 | **Budget declared** — max REQs, max fix-iterations per REQ (default 5), max ADR revisions per milestone (default 3), checkpoint mode (blocking / non-blocking) | Unbounded loops burn unbounded tokens |
+| 7 | **Design/UX reference** — mockup path, "no UI", or "planner's judgment" explicit | G-1 needs a baseline to exist |
+| 8 | **Feasibility check** — the scope is inside the capability envelope of an AI loop (a WebView browser shell ✅; a Chromium-class engine ❌). If not, the gate REFUSES with an achievable alternative | Starting an impossible program is the most expensive failure mode |
+
+Any FAIL item → the gate does **not** start the loop; it asks the owner
+targeted questions (interview), updates the brief, and re-scores. Only
+8/8 → plan preview → explicit owner approval → loop start.
+
+**Decision-authority grants.** At the gate, the owner records which
+decision classes the loop may take autonomously mid-run (naming, minor
+UX, library choice within the locked stack, error-message wording, …).
+Mid-loop ambiguities inside a granted class are handled
+**decide-and-log** (recorded in `ASSUMPTIONS.md`, work continues);
+ambiguities outside every granted class are **parked** (REQ flagged,
+loop reroutes to other work) — the loop never halts to ask for input.
+
+**Immutable zone (anti-reward-hacking).** For the whole life of the
+program, the loop and every agent it spawns treat these as READ-ONLY:
+
+- `governance/autopilot/<program-id>/SPEC.md`
+- `governance/autopilot/<program-id>/acceptance-criteria.md`
+- baseline/regression test files that existed before the program started
+
+The loop may ADD tests; it may never edit or delete the acceptance
+criteria or pre-existing tests to make itself pass. Done-criteria are
+externally defined and cannot be redefined by the loop. Any diff
+touching the immutable zone = BLOCK at merge-readiness, no waiver.
+
+**Circuit breaker (anti-doom-loop).** The iteration protocol enforces:
+same-fix-fingerprint repeated 3× on one REQ → that REQ is PARKED (not
+retried); per-REQ fix-iteration budget exhausted → PARKED; all REQs
+parked/blocked → loop HALTS with an escalation report. Parking is not
+"asking the user" — it is giving up on one path and continuing on
+others; parked items surface at the next checkpoint.
+
+**Why this exists:** Evidence from long-running autonomous coding
+systems shows the two killer failure modes are (a) starting with an
+ambiguous spec (garbage compounds), and (b) never giving up on a doomed
+path (doom loop — days lost on impossible fixes). G-9 front-loads all
+human clarity BEFORE the loop and installs automated give-up rules
+INSIDE it, so full autonomy between gate and checkpoint is safe.
+
+---
+
 ## Enforcement summary
 
 | Guardrail | Enforced by | At which gate |
@@ -270,6 +327,7 @@ changed the contract by accident."
 | G-6 divergence registry | TL (assigned), reviewer-standards | At G-1 evaluation |
 | G-7 API contract parity | TL (assigned), reviewer-security, reviewer-architecture | `merge-readiness.md` §Contract parity |
 | G-8 contract registry | TL (assigned), reviewer-security | At G-7 evaluation |
+| G-9 clarity gate (Mode L) | EM + architect at gate; TL + reviewers on immutable zone | Before loop start; every merge-readiness during the program |
 
 These guardrails are part of ROLES.md's effective contract. They take
 precedence over agent-internal heuristics. Where any reviewer disagrees
@@ -284,3 +342,4 @@ silently waive.
 |---|---|---|
 | YYYY-MM-DD | Initial commit (G-1..G-6) | <incident-summary> |
 | YYYY-MM-DD | Added G-7 (API contract parity) + G-8 (contract registry) | Backend analogue of G-1/G-6 — catch silent response-contract drift and public-endpoint data leaks under parallel autonomous Devs. |
+| YYYY-MM-DD | Added G-9 (clarity gate, Mode L) | Autonomous build-until-done loops fail two ways: ambiguous specs compound garbage, and doom loops never give up. G-9 front-loads clarity + installs immutable zone and circuit breaker. |
