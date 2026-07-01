@@ -1,9 +1,9 @@
 # GUARDRAILS.md — engineering guardrails (binding)
 
-> Six hard rules that prevent the "fix one thing, break another" failure
-> mode. These rules apply IN ADDITION to ROLES.md and CONSTITUTION.md,
-> not in place of them. Where a guardrail conflicts with a rule, the
-> **stricter reading wins**.
+> Eight hard rules that prevent the "fix one thing, break another"
+> failure mode. These rules apply IN ADDITION to ROLES.md and
+> CONSTITUTION.md, not in place of them. Where a guardrail conflicts with
+> a rule, the **stricter reading wins**.
 >
 > These guardrails are derived from real-world regressions observed in
 > multi-agent pipelines. Adjust path placeholders to your project's
@@ -176,6 +176,88 @@ divergence" from "we caused this divergence by accident."
 
 ---
 
+## G-7. API contract-parity gate for backend REQs
+
+This is the backend analogue of G-1. G-1 protects *rendered pixels*
+against unregistered UI drift; G-7 protects *API response contracts*
+against unregistered response drift.
+
+Before any REQ that touches the backend API surface — a route/handler/
+tRPC procedure, a serializer/DTO/response mapper, or any code that
+shapes what an endpoint returns — is marked READY-FOR-MERGE, the
+assigned TL produces a **contract diff** for every touched endpoint:
+
+- **Baseline (left):** the endpoint's stored response snapshot from
+  `governance/api-contracts/<service>/<METHOD>__<path-slug>.snapshot.json`
+  (captured on the base branch — i.e. `main` — or the last registered
+  baseline).
+- **Candidate (right):** the same endpoint's response on the head
+  branch, captured by the `test-integration` agent against the running
+  server (real DB, seeded fixture), for a fixed request fixture.
+
+Both sides are passed through `governance/scripts/contract-diff.mjs`,
+which **normalizes volatile fields** (timestamps, UUIDs/auto-increment
+ids, cursors, `Date.now()`-shaped values, nonces) before diffing so the
+signal is the *shape and stable values*, not run-to-run noise. Default
+mode is **contract-shape** (fields added / removed / type-changed);
+value-level diff is opt-in per endpoint.
+
+Verdict logic:
+
+| State | Outcome |
+|---|---|
+| No diff after normalization (shape identical) | PASS |
+| Diff is covered by an active entry in `governance/api-contract-registry.md` for the changed endpoint | PASS |
+| Diff is declared in this REQ's `spec.md` (§Intentional contract change) | PASS (and the change must be added to the registry as part of merge) |
+| Diff exists and is NOT registered | BLOCK — fix or register before READY-FOR-MERGE |
+| A field appears in an **unauthenticated / public** endpoint response that is on the private-field denylist (installed-state, tenant/merchant-private, internal ids, secrets) | BLOCK unconditionally — a registry entry does NOT waive a data-leak on a public endpoint |
+
+The contract diff is attached as
+`tasks/TASK-<n>-contract-diff.md` (the `contract-diff.mjs` output plus a
+1-paragraph caption) and referenced in `merge-readiness.md`.
+
+Endpoints with **no** stored baseline (net-new endpoints) do not BLOCK
+on missing baseline — instead the captured candidate snapshot is
+committed as the **first** baseline, and the fact that it is a new
+public/private surface is noted in the diff report so a reviewer sees it.
+
+**Why this exists:** Under parallel autonomous Devs, a response contract
+can change silently — a private field leaked into a public response, a
+field renamed/removed that a consumer depends on, or an endpoint outside
+the REQ's declared scope whose output shifted as a side-effect. Unit
+tests pass (logic is "correct"), and a human reviewer scanning a large
+JSON body can miss the one changed field. Only a normalized before/after
+diff makes the contract change mechanically visible — exactly as G-1
+makes a visual regression visible in pixels.
+
+---
+
+## G-8 (mechanism). API-contract registry
+
+Intentional changes to an API response contract are NOT prohibited. They
+are **registered** in `governance/api-contract-registry.md` with one
+entry per change, including: endpoint (method + path), what the baseline
+returned, what the new contract returns, reason, whether it is a
+**breaking** change for consumers, approved-by (human or named TL), date.
+
+The G-7 contract-parity gate consults this registry. A registered change
+PASSES automatically. An unregistered change FAILS. **Exception:** a
+private-field leak on a public/unauthenticated endpoint (see G-7 last
+row) can NEVER be waived by a registry entry — it must be fixed.
+
+Registry entries are **appended, not edited.** Superseding an entry
+requires a new entry with `Supersedes: <id>` referring to the prior one.
+This gives an audit trail of how each endpoint's contract evolved, and —
+because breaking changes are flagged — a place to check before a consumer
+integration breaks.
+
+**Why this exists:** A strict "the response must never change" rule would
+block every legitimate API evolution. The registry decouples "we
+intended this contract change (and know if it's breaking)" from "an agent
+changed the contract by accident."
+
+---
+
 ## Enforcement summary
 
 | Guardrail | Enforced by | At which gate |
@@ -186,6 +268,8 @@ divergence" from "we caused this divergence by accident."
 | G-4 batch cap | EM, orchestrator | At `/em-intake` time |
 | G-5 no "pre-existing" | TL (assigned), reviewer-standards | `merge-readiness.md` §Test signal |
 | G-6 divergence registry | TL (assigned), reviewer-standards | At G-1 evaluation |
+| G-7 API contract parity | TL (assigned), reviewer-security, reviewer-architecture | `merge-readiness.md` §Contract parity |
+| G-8 contract registry | TL (assigned), reviewer-security | At G-7 evaluation |
 
 These guardrails are part of ROLES.md's effective contract. They take
 precedence over agent-internal heuristics. Where any reviewer disagrees
@@ -199,3 +283,4 @@ silently waive.
 | Date | Change | Reason |
 |---|---|---|
 | YYYY-MM-DD | Initial commit (G-1..G-6) | <incident-summary> |
+| YYYY-MM-DD | Added G-7 (API contract parity) + G-8 (contract registry) | Backend analogue of G-1/G-6 — catch silent response-contract drift and public-endpoint data leaks under parallel autonomous Devs. |

@@ -70,11 +70,15 @@ your-project/
 │   ├── TECH_DEBT.md                  # sanctioned waivers
 │   ├── COVERAGE_THRESHOLDS.md        # test gates
 │   ├── ARCHITECTURE.md               # system shape, layering, SLAs
-│   ├── GUARDRAILS.md                 # 6 binding guardrails (v0.2.0+)
-│   ├── design-divergence-registry.md # registered drift from design ref
+│   ├── GUARDRAILS.md                 # 8 binding guardrails (v0.2.0+, G-7/G-8 in v0.11.0+)
+│   ├── design-divergence-registry.md # registered drift from design ref (G-6)
+│   ├── api-contract-registry.md      # registered API response-contract changes (G-8, v0.11.0+)
+│   ├── api-contracts/                # stored per-endpoint response baselines (G-7, v0.11.0+)
 │   ├── graphs/                       # Mermaid linking-graphs (v0.6.0+, /eng-org:graphyfy)
 │   ├── requirements/README.md        # per-REQ folder layout
-│   └── scripts/check.mjs             # zero-dep validator
+│   └── scripts/
+│       ├── check.mjs                 # zero-dep validator
+│       └── contract-diff.mjs         # zero-dep G-7 contract-parity engine (v0.11.0+)
 ├── scripts/
 │   ├── new-project.sh                # standalone multi-project scaffolder
 │   └── eng-org-templates/project/    # per-project doc templates (PRD, ADR log, …)
@@ -237,7 +241,7 @@ about whether a bug fits, escalate.
 
 ## Guardrails (v0.2.0+, `governance/GUARDRAILS.md`)
 
-Six binding guardrails enforced in addition to ROLES.md. They exist
+Eight binding guardrails enforced in addition to ROLES.md. They exist
 because real multi-agent runs hit "fix one thing, break another" until
 the rules below are mechanical:
 
@@ -260,9 +264,21 @@ the rules below are mechanical:
 - **G-6 Design-divergence registry** — intentional drift from the
   design reference is registered, not prohibited. G-1 consults the
   registry; registered divergences PASS, unregistered FAIL.
+- **G-7 API contract-parity gate** (v0.11.0+) — the backend analogue of
+  G-1. Any REQ touching an endpoint's response ships a normalized
+  before/after **contract diff** (`governance/scripts/contract-diff.mjs`
+  strips volatile fields — timestamps, uuids, ids — so the signal is the
+  contract, not noise). Unregistered response drift BLOCKs merge; a
+  **private-field leak on a public/unauthenticated endpoint** is an
+  unconditional BLOCK that no registry entry can waive.
+- **G-8 API-contract registry** (v0.11.0+) — intentional contract changes
+  are registered in `governance/api-contract-registry.md` (append-only,
+  breaking-change flagged), not prohibited. G-7 consults it; registered
+  changes PASS, unregistered FAIL.
 
-`/eng-org:init` lays both files down. `merge-readiness.md` enforces
-G-1/G-2/G-3/G-5 mechanically; `em-intake.md` enforces G-4.
+`/eng-org:init` lays these files down. `merge-readiness.md` enforces
+G-1/G-2/G-3/G-5/G-7 mechanically; `em-intake.md` enforces G-4. The G-7
+snapshot is captured by the `test-integration` agent during `/run-tests`.
 
 ---
 

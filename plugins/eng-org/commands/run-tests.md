@@ -45,6 +45,14 @@ Steps:
    RED, coverage / latency / flake numbers, and a "what I did
    not cover" section.
 
+   **G-7 note:** for any task touching the backend API surface, the
+   `test-integration` agent ALSO captures a response snapshot per
+   touched endpoint and runs `governance/scripts/contract-diff.mjs`
+   against the stored baseline, writing `tasks/TASK-<n>-contract-diff.md`.
+   A `DRIFT`/`LEAK` verdict there is a RED (unless already registered in
+   `governance/api-contract-registry.md`); a public-endpoint leak is a
+   RED that no registry entry can waive.
+
 4. After all return, summarize: green/red count per task. If any
    RED, do NOT proceed to reviews — return to the relevant TL
    to dispatch a fix iteration. If all GREEN, print "Tests done

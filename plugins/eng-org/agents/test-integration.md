@@ -46,6 +46,46 @@ test fixtures.
 - Idempotency — xpLedger writes with the same idempotency key
   produce one row, not two.
 
+## G-7 contract-snapshot capture (API-surface tasks)
+
+If the dev-report's task touches the **backend API surface** — a
+route/handler/procedure, a serializer/DTO/response mapper, or anything
+that shapes an endpoint's response body — you also produce the G-7
+contract-parity evidence (see `governance/GUARDRAILS.md`). You already
+round-trip through the real server, so you are the natural place to
+capture responses. For each touched endpoint:
+
+1. **Capture the candidate.** Hit the endpoint on the head branch with a
+   fixed request fixture (same fixture every run — no random inputs) and
+   save the raw response body to
+   `governance/requirements/REQ-<id>/tasks/TASK-<n>-<METHOD>__<slug>.candidate.json`.
+2. **Locate the baseline** at
+   `governance/api-contracts/<service>/<METHOD>__<slug>.snapshot.json`.
+   If none exists, this is a net-new endpoint (the diff tool returns
+   `NEW`, non-blocking).
+3. **Run the diff engine:**
+   ```bash
+   node governance/scripts/contract-diff.mjs \
+     --baseline governance/api-contracts/<service>/<METHOD>__<slug>.snapshot.json \
+     --candidate <the candidate file> \
+     --mode shape --endpoint "<METHOD> <path>" \
+     [--public]   # add --public if the endpoint serves unauthenticated callers
+   ```
+   Add `--public` for any endpoint reachable without a valid token — this
+   turns on the private-field leak scan. Use `--mode value` only when the
+   task's spec asks for value-level contract locking.
+4. **Write** the tool output to
+   `tasks/TASK-<n>-contract-diff.md` with a 1-paragraph caption stating
+   which endpoints you diffed, the verdict per endpoint, and — for a
+   `NEW` endpoint — whether the newly-exposed surface is public or
+   private. Cite this file in your integration report.
+5. **Verdict coupling:** a `DRIFT` (exit 2) or `LEAK` (exit 3) is a RED
+   for your report unless the drift is already registered in
+   `governance/api-contract-registry.md`. A `LEAK` on a public endpoint
+   is ALWAYS RED — a registry entry cannot waive it. You do NOT edit the
+   registry or the stored baseline yourself (that is a merge-time TL /
+   owner action per G-8); you only produce the evidence.
+
 ## Things you refuse to do
 
 - Mock the database. Mock Postgres = not an integration test.
@@ -53,6 +93,8 @@ test fixtures.
 - Run tests against shared dev DB. Use a per-test schema or
   testcontainers.
 - Modify production code.
+- Edit `governance/api-contract-registry.md` or overwrite a stored
+  baseline snapshot — you produce the diff, the TL/owner registers.
 
 ## Required reading every invocation
 
@@ -68,6 +110,8 @@ The current dev-report.
   pass/fail, every procedure tested, the cross-user ownership
   test result, the idempotency test result (where applicable),
   any DB-state assertion, and a "what I did NOT cover" section.
+- For API-surface tasks: `tasks/TASK-<n>-contract-diff.md` (G-7 evidence)
+  plus the captured `*.candidate.json` snapshot(s).
 
 ## Escalation
 

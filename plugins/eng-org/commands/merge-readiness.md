@@ -43,6 +43,18 @@ Steps:
        unless it is documented in `governance/TECH_DEBT.md` with
        a retirement date ≤ 30 days and the REQ id under which it
        was surfaced.
+     - **G-7 (API contract parity):** For any REQ touching the
+       backend API surface, verify `tasks/TASK-<n>-contract-diff.md`
+       is attached for each touched endpoint. Verdict logic:
+       `PASS`/`NEW` = pass (for `NEW`, commit the normalized
+       candidate as the new baseline under
+       `governance/api-contracts/<service>/` as part of merge);
+       `DRIFT` = BLOCK unless covered by an active entry in
+       `governance/api-contract-registry.md` OR declared in this
+       REQ's `spec.md §Intentional contract change` (in which case
+       add the registry entry AND update the baseline as part of
+       merge); `LEAK` on a public endpoint = **unconditional BLOCK**,
+       no registry entry waives it.
    - Apply the merge-readiness template from ROLES.md §4:
      - Scope summary
      - Files changed list
@@ -50,7 +62,7 @@ Steps:
      - Review signal (5 reports, all APPROVE required; one
        NEEDS-CHANGES allowed only with reason + EM ack)
      - MISTAKES regression sweep result
-     - Guardrail sweep: G-1 / G-2 / G-3 / G-5 outcomes with
+     - Guardrail sweep: G-1 / G-2 / G-3 / G-5 / G-7 outcomes with
        evidence paths
      - Out-of-scope drift declared
      - Verdict: READY-FOR-MERGE / NOT-READY (with reason)
@@ -74,4 +86,4 @@ Steps:
 
 A merge-readiness.md without all 10 signals (5 tests + 5 reviews)
 green, OR missing any applicable guardrail sweep (G-1 / G-2 / G-3
-/ G-5), is invalid; the TL refuses to write READY-FOR-MERGE.
+/ G-5 / G-7), is invalid; the TL refuses to write READY-FOR-MERGE.

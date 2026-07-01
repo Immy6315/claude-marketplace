@@ -123,6 +123,7 @@ Use the Write tool to create:
 - `governance/requirements/README.md` ← `${CLAUDE_PLUGIN_ROOT}/templates/governance/requirements/README.md`
 - `governance/capabilities/README.md` ← `${CLAUDE_PLUGIN_ROOT}/templates/governance/capabilities/README.md`
 - `governance/scripts/check.mjs` ← `${CLAUDE_PLUGIN_ROOT}/templates/governance/scripts/check.mjs`
+- `governance/scripts/contract-diff.mjs` ← `${CLAUDE_PLUGIN_ROOT}/templates/governance/scripts/contract-diff.mjs` (G-7 API contract-parity engine)
 
 **B. Templated governance docs (only if they don't exist)** — read template, substitute placeholders, write:
 - `governance/CONSTITUTION.md` ← from `templates/governance/CONSTITUTION.template.md`
@@ -132,6 +133,11 @@ Use the Write tool to create:
 - `governance/TECH_DEBT.md` ← from `templates/governance/TECH_DEBT.template.md`
 - `governance/GUARDRAILS.md` ← from `templates/governance/GUARDRAILS.template.md`
 - `governance/design-divergence-registry.md` ← from `templates/governance/design-divergence-registry.template.md`
+- `governance/api-contract-registry.md` ← from `templates/governance/api-contract-registry.template.md` (G-8 registry consulted by the G-7 gate)
+
+Also create the empty baseline directory `governance/api-contracts/`
+(where G-7 stores per-endpoint response snapshots) with a `.gitkeep` so
+it is tracked. Baselines are added as endpoints are captured, not at init.
 
 Substitute these placeholders in templates:
 - `{{PROJECT_NAME}}` — the project's name (from package.json `name` or directory name)
