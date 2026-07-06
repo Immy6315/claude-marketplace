@@ -190,11 +190,37 @@ ADR. TLs MUST read the ADR before `tl-analyze`.
 | 2 | `/eng-org:tl-analyze REQ-<id>` | TL drafts a tasks plan + risk list |
 | 3 | `/eng-org:tl-assign REQ-<id>` | TL spawns Dev specialists per task |
 | 4 | `/eng-org:run-tests REQ-<id>` | Independent test agents (unit / integration / e2e / regression / load) |
-| 5 | `/eng-org:run-reviews REQ-<id>` | Reviewers (architecture / security / performance / standards / observability / indexes) |
+| 5 | `/eng-org:run-reviews REQ-<id>` | Reviewers (architecture / security / performance / standards / observability / indexes) **+ GR deep-review** (see below) |
 | 6 | `/eng-org:merge-readiness REQ-<id>` | TL aggregates, EM gates |
 | 7 | `/eng-org:em-summary REQ-<id>` | Human-facing summary |
 
 `/eng-org:pilot-check` is a self-test of the framework on its own files.
+
+#### GR deep-review (NEW in 0.13.0) — independent second review engine
+
+`/eng-org:run-reviews` now also runs the **gr** multi-specialist review
+engine over the REQ's actual diff, in **local-diff mode** — no GitHub
+PR, no token, nothing posted anywhere:
+
+```bash
+gr review --range <base-branch>..HEAD --repo <repo-path>
+```
+
+- **Zero-install friction:** `scripts/gr-ensure.sh` resolves the binary
+  (PATH → `~/.local/bin/gr` → one-time download of a pre-built binary
+  from the public `Immy6315/gr-releases` repo). The gr-reviewer plugin
+  is NOT required. If installation fails (offline), GR is skipped with
+  a note — it never blocks the pipeline.
+- **Any base branch:** the diff base comes from the REQ's `spec.md`
+  target branch (`develop`, `releases/stable`, …) — `main` is never
+  assumed.
+- **TL validation gate:** GR findings are advisory until the TL
+  evidence-verifies them against the code. Dispositions (CONFIRMED /
+  FALSE-POSITIVE / OUT-OF-SCOPE) land in `REQ-<id>/gr-review.md`;
+  merge-readiness refuses READY-FOR-MERGE without it.
+- **Learning loop:** every CONFIRMED finding appends a prevention rule
+  to `governance/MISTAKES.md`, so the org stops repeating that class
+  of mistake.
 
 ### Mode L — Autonomous build-until-done loop (NEW in 0.12.0)
 

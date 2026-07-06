@@ -55,6 +55,12 @@ Steps:
        add the registry entry AND update the baseline as part of
        merge); `LEAK` on a public endpoint = **unconditional BLOCK**,
        no registry entry waives it.
+   - **GR deep-review sweep:** `governance/requirements/REQ-<id>/gr-review.md`
+     must exist and give EVERY GR finding a disposition (CONFIRMED /
+     FALSE-POSITIVE / OUT-OF-SCOPE, each with evidence) — or contain an
+     explicit skip-note (gr binary unavailable). An unresolved CONFIRMED
+     P0/P1 = NOT-READY. A missing gr-review.md (when `/run-reviews` ran
+     GR) = NOT-READY, remand to the TL.
    - Apply the merge-readiness template from ROLES.md §4:
      - Scope summary
      - Files changed list
@@ -64,6 +70,7 @@ Steps:
      - MISTAKES regression sweep result
      - Guardrail sweep: G-1 / G-2 / G-3 / G-5 / G-7 outcomes with
        evidence paths
+     - GR deep-review disposition table (or skip-note)
      - Out-of-scope drift declared
      - Verdict: READY-FOR-MERGE / NOT-READY (with reason)
 
