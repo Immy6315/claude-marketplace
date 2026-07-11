@@ -27,8 +27,29 @@ Steps:
      `tasks/TASK-<n>-<slug>.md` per Dev assignment), test plan,
      review plan, risks, rollback.
 
-4. After all TLs return, summarize: "TL analysis for REQ-<id>
-   complete. Tasks proposed: <count>. Run `/tl-assign REQ-<id>`
-   to dispatch Devs."
+4. **Pack generation (Feature 3 — context pack v2).** After all TL
+   analyses are complete, spawn a fresh `context-packer` subagent
+   (DISTINCT from any TL agent — iron rule §H.43 prohibits a TL from
+   authoring its own pack). Pass it:
+   - The REQ id.
+   - The union of all "relevant-reading" files cited across every
+     `tl-<domain>-analysis.md` for this REQ.
+   - The blast-radius areas (subsystem tags) to use when filtering
+     `MISTAKES.md`.
+
+   The `context-packer` agent writes
+   `governance/requirements/REQ-<id>/context-pack.md` per its contract
+   (verbatim extracts, GUARDRAILS.md always whole, exclusion manifest
+   mandatory). Do NOT spawn Devs until the pack file exists on disk.
+
+   If `context-packer` fails or the pack file is missing, downstream
+   Dev and Test agents fall back to reading raw docs and MUST log every
+   raw doc they read in their report's `raw_doc_reads:` frontmatter list.
+   This fallback is logged but does not block tl-assign.
+
+5. After all TLs return and the pack is written, summarize: "TL analysis
+   for REQ-<id> complete. Tasks proposed: <count>. Context pack written
+   at `governance/requirements/REQ-<id>/context-pack.md`. Run
+   `/tl-assign REQ-<id>` to dispatch Devs."
 
 Do NOT spawn Devs in this command. Analysis only.

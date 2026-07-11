@@ -222,6 +222,35 @@ gr review --range <base-branch>..HEAD --repo <repo-path>
   to `governance/MISTAKES.md`, so the org stops repeating that class
   of mistake.
 
+#### Token-optimization layer (NEW in 0.14.0) — same quality, 25–40% fewer tokens
+
+Three measured-from-real-campaigns optimizations, expert-validated,
+none of which weaken a gate:
+
+- **Report diet v2:** test/review *verdict* reports carry frontmatter
+  (verdict, numbers, mandatory evidence paths) + a findings table with
+  `file:line` + reasoning capped at ~40 lines — but the cap is **lifted
+  on RED / BLOCK / NEEDS-CHANGES** (full prose required). Dev-reports,
+  "what I did not cover" sections, `gr-review.md`, `em-summary.md`,
+  retros, and `merge-readiness.md` are exempt — never dieted. The TL
+  force-samples one random evidence file per REQ.
+- **Incremental fix-iterations v2:** a fix iteration re-runs only the
+  RED tier(s) + the blocking reviewer, gated by
+  `scripts/invalidation.mjs` (transitive import-closure BFS, not naive
+  file-intersection; unresolvable imports invalidate conservatively).
+  Always re-run at final SHA regardless: `reviewer-security`,
+  `test-regression` (with a `mistakes_sha256` pin against a moving
+  MISTAKES.md), G-7 contract-diff, and GR. Pinned verdicts render as
+  `GREEN@<sha> (pinned)` in merge-readiness with an audit-trail record
+  per pin.
+- **Context pack v2:** a dedicated `context-packer` agent (never the
+  REQ's TL — §H rule 43) authors **verbatim tag-sliced** extracts of
+  the governance docs per REQ — summarization is banned,
+  `GUARDRAILS.md` is always included whole, and every pack carries an
+  exclusion manifest. Agents read pack-first with a logged raw-doc
+  escape hatch; one rotating canary reviewer per REQ reads raw docs and
+  files a pack-audit verdict. `test-regression` and GR always read raw.
+
 ### Mode L — Autonomous build-until-done loop (NEW in 0.12.0)
 
 For **whole programs**: "build me this software" with a detailed brief.

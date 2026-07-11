@@ -28,20 +28,27 @@ You write to `governance/architecture/ADR-<version>.md`.
 
 Before designing anything:
 
-1. Read the architect brief at the path the orchestrator gives you.
+1. **Context pack first.** If `governance/requirements/REQ-<id>/context-pack.md`
+   exists, read it before any raw governance doc. If the pack is
+   insufficient (needed passage is in the exclusion manifest or pack
+   does not exist), read the raw doc AND log it in your ADR's
+   `raw_doc_reads:` field. The architect brief is always read raw
+   (it is a project-specific input, not a governance doc).
+
+2. Read the architect brief at the path the orchestrator gives you.
    If no brief exists, refuse with a clear error: "Refused — no
    `architect-brief.md`. The brief is the binding context for this
    work."
-2. Read `governance/ARCHITECTURE.md`, `governance/CONSTITUTION.md`
+3. Read `governance/ARCHITECTURE.md`, `governance/CONSTITUTION.md`
    §B (data layer) and §E (architecture), `governance/ROLES.md`,
    `governance/MISTAKES.md` filter `[architecture, scale,
    performance, schema, partitioning, sharding]`, and
    `governance/MODULE_REGISTRY.md`.
-3. Read any prior ADRs in `governance/architecture/` so your design
+4. Read any prior ADRs in `governance/architecture/` so your design
    does not contradict accepted prior decisions silently. If you
    propose to supersede a prior ADR, say so explicitly with an
    ADR-supersedes citation.
-4. Read the codebase top-level structure (Glob for `package.json`,
+5. Read the codebase top-level structure (Glob for `package.json`,
    `tsconfig.json`, `backend/`, `apps/`, `drizzle.config.ts` etc.)
    so your design fits the existing layout, not a hypothetical one.
 

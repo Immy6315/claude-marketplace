@@ -55,22 +55,97 @@ Steps:
        add the registry entry AND update the baseline as part of
        merge); `LEAK` on a public endpoint = **unconditional BLOCK**,
        no registry entry waives it.
+   - **Step 2b — Forced-sampling audit (ALWAYS, not dispute-triggered):**
+     On every REQ, TL opens **1 randomly chosen evidence file per REQ**
+     from the union of all test-report `evidence:` paths + all
+     reviewer-report `files_reviewed:` paths across every TASK in the REQ.
+
+     Procedure:
+     1. Collect all `evidence:` entries from `tasks/TASK-*-test-*-report.md`
+        and all `files_reviewed:` entries from `tasks/TASK-*-review-*.md`.
+        Union the paths (deduplicated).
+     2. Select one path uniformly at random (or pseudo-randomly — any
+        deterministic selection based on REQ id is acceptable provided it
+        is not always the same file class).
+     3. Open that file at the pointed line range and verify the content
+        at those lines supports the verdict claimed by the source report.
+     4. Write the result as a `§Forced-sampling audit` block in
+        `merge-readiness.md` citing:
+        - chosen path + chosen line range
+        - source verdict-report path (which test/review report cited it)
+        - `supported` or `not-supported`
+        - one-sentence rationale
+
+     `not-supported` outcome = NOT-READY: remand to the relevant
+     test or reviewer agent for a RED verdict re-issue against the
+     actual file contents.
+
+     Important: this is TL opening OTHER agents' evidence files to
+     independently verify their verdicts. It is NOT the TL reviewing
+     its own work. Iron rule §H.42 (no self-approval) is preserved —
+     the TL's own analysis artifact (`tl-<domain>-merge-readiness.md`)
+     is a separate artifact from the sampled evidence; the TL is not
+     approving its own analysis, it is spot-checking a different agent's
+     evidence path. If the REQ has a separate assigned TL for analysis
+     and a different TL for merge-readiness, the distinction is explicit.
+     In single-TL REQs the forced-sampling step is still valid because
+     the TL is checking test-agent and reviewer-agent evidence, not its
+     own artifact.
+
    - **GR deep-review sweep:** `governance/requirements/REQ-<id>/gr-review.md`
      must exist and give EVERY GR finding a disposition (CONFIRMED /
      FALSE-POSITIVE / OUT-OF-SCOPE, each with evidence) — or contain an
      explicit skip-note (gr binary unavailable). An unresolved CONFIRMED
      P0/P1 = NOT-READY. A missing gr-review.md (when `/run-reviews` ran
      GR) = NOT-READY, remand to the TL.
+   - **Step 2c — Pinned-verdict rendering and audit-trail verification
+     (Feature 2 — incremental fix-iterations v2).**
+
+     When the REQ went through one or more fix iterations, some tiers or
+     reviewers may carry pinned verdicts rather than freshly-computed ones.
+     The TL must:
+
+     1. **Render pinned verdicts** in the Hard gates block as
+        `GREEN@<sha> (pinned)` — where `<sha>` is the SHA the verdict was
+        originally computed against. Example:
+
+        ```
+        test-unit:        GREEN@abc1234 (pinned)
+        test-integration: GREEN@abc1234 (pinned)
+        reviewer-performance: GREEN@abc1234 (pinned)
+        ```
+
+        A pinned verdict is cited prior evidence, NOT self-approval
+        (iron rule §H.42 preserved — the TL is verifying that the prior
+        GREEN was correctly pinned by the `run-tests` / `run-reviews`
+        fix-iteration protocol, not re-issuing a verdict on its own work).
+
+     2. **Verify audit-trail file exists** for every claimed pin.
+        For each tier rendered as `GREEN@<sha> (pinned)`, confirm that a
+        corresponding audit-trail file exists at:
+        `governance/.audit/REQ-<id>/<timestamp>-pin-<random>.md`
+
+        A claimed pin WITHOUT a corresponding audit-trail file = NOT-READY.
+        Remand to the TL who ran the fix iteration to produce the audit file.
+
+     3. **Verify audit-trail content** — each audit file must contain at
+        minimum: tier name, pinned-at sha, current sha, invalidation key
+        computation output, decision. Incomplete audit file = NOT-READY.
+
    - Apply the merge-readiness template from ROLES.md §4:
      - Scope summary
      - Files changed list
-     - Test signal (5 reports, all GREEN required)
-     - Review signal (5 reports, all APPROVE required; one
-       NEEDS-CHANGES allowed only with reason + EM ack)
+     - Test signal (5 reports, all GREEN required; pinned tiers shown as
+       `GREEN@<sha> (pinned)`)
+     - Review signal (5 reports, all APPROVE required; pinned reviewers
+       shown as `GREEN@<sha> (pinned)`; one NEEDS-CHANGES allowed only
+       with reason + EM ack)
      - MISTAKES regression sweep result
      - Guardrail sweep: G-1 / G-2 / G-3 / G-5 / G-7 outcomes with
        evidence paths
      - GR deep-review disposition table (or skip-note)
+     - Pinned-verdict audit: list of pinned tiers + corresponding
+       `governance/.audit/REQ-<id>/` file paths (all must exist)
      - Out-of-scope drift declared
      - Verdict: READY-FOR-MERGE / NOT-READY (with reason)
 

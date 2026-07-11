@@ -44,6 +44,11 @@ Then read the code under test (READ ONLY).
 
 ## Required reading every invocation
 
+**Context pack first.** Read `governance/requirements/REQ-<id>/context-pack.md`
+before any raw governance doc. If the pack is insufficient (needed passage
+is in the exclusion manifest or pack does not exist), read the raw doc AND
+log it in your report's `raw_doc_reads:` frontmatter list.
+
 CLAUDE.md, ROLES.md, CONSTITUTION.md (§B.13 95% gate),
 COVERAGE_THRESHOLDS.md, MISTAKES.md filter [test, coverage,
 unit, mock]. The current dev-report.
@@ -58,6 +63,49 @@ unit, mock]. The current dev-report.
   flagged.
 - Verdict: GREEN (all pass, ≥95% if domain) or RED (with
   reproduction).
+
+### Report diet contract (v2)
+
+`TASK-<n>-test-unit-report.md` is a **verdict-carrying** report and
+is subject to the diet contract below.
+
+**Mandatory frontmatter (YAML block at top of every report):**
+
+```yaml
+---
+verdict: GREEN | RED | BLOCKED
+coverage:
+  line: <pct>
+  branch: <pct>
+evidence:
+  - <absolute path or repo-relative path>:<line-range>
+  - ...
+raw_doc_reads: []           # populated by context-pack agent (TASK-3); add empty stub here
+---
+```
+
+**Diet contract when verdict is GREEN:**
+
+> - **Frontmatter (MANDATORY):** verdict, coverage numbers, evidence paths (absolute paths to test files / to specific file:line ranges reviewed).
+> - **Findings table:** `file:line` per finding, one row each; no prose per row beyond a one-sentence what.
+> - **Reasoning section:** capped at **~40 lines** of prose.
+
+**Cap LIFTED (unbounded prose required) when:**
+
+> verdict is `RED`, `BLOCK`, `NEEDS-CHANGES`, or `FAIL`. Full-prose reasoning is required so the receiving Dev / TL can act.
+
+**EXEMPT from diet (never dieted, even at GREEN):**
+
+> - Dev diffs (`implementation/TASK-<n>-diff.md`) — they are the contract test agents verify.
+> - Any "what I did not cover" / "known gaps" sections in test reports.
+> - `gr-review.md` (GR deep-review artifact from 0.13.0).
+> - `em-summary.md` (Imran-facing, 1-page format governed by ROLES §2.1).
+> - `retro-M<n>.md` (autopilot per-milestone retros).
+> - `merge-readiness.md` (TL composite verdict).
+
+Mechanical check (caller can run to verify dev-diffs were not dieted):
+`grep -l 'coverage:' governance/requirements/REQ-<id>/implementation/TASK-*-diff.md`
+must return empty.
 
 ## Escalation
 

@@ -32,9 +32,154 @@ Steps:
    Reviewers are read-only. They consume dev-reports + test
    reports + the actual code; they emit a verdict report.
 
+   **Context pack — pack-first rule.** Before reading any raw governance
+   doc, every spawned reviewer reads
+   `governance/requirements/REQ-<id>/context-pack.md` first. If the
+   pack is sufficient for the reviewer's checks, it reads only the pack.
+   If the pack is insufficient (a needed passage is in the exclusion
+   manifest or the pack does not exist), the reviewer reads the raw doc
+   AND logs every raw doc it read in its report's `raw_doc_reads:`
+   frontmatter list (the YAML field already present in all reviewer
+   report templates since v0.14.0).
+
+   **Rotating canary — pack-audit (Feature 3).** For each REQ, select
+   ONE reviewer from the spawned set to act as the canary reviewer.
+   Selection rule: use the REQ id string's last hex digit (0–f) modulo
+   the reviewer count to select an index into the alphabetically-sorted
+   reviewer list. Example: 6 reviewers, last digit `a` (= 10 decimal),
+   10 mod 6 = 4 → reviewer at index 4 (0-based) is the canary.
+
+   The canary reviewer reads the **raw governance docs** instead of the
+   context pack (it is explicitly exempt from the pack-first rule for
+   this REQ only). After completing its normal verdict, it appends a
+   `pack_audit:` line to its report frontmatter (the field is already
+   present as `null` in all reviewer report templates):
+
+   ```yaml
+   pack_audit: "divergence: yes | no — <one sentence describing any passage
+     the pack omitted or misrepresented that affected this review>"
+   ```
+
+   `divergence: yes` means the canary found something in the raw doc that
+   the pack did not cover and that materially affected the review.
+   `divergence: no` means the pack was sufficient.
+
+   Non-canary reviewers set `pack_audit: null` (default; already in template).
+
+   **Bootstrap note:** the rotating canary is active from the first REQ
+   run under version 0.14.0 (the version that introduced Feature 3). No
+   warm-up period. The first REQ that reaches `/run-reviews` after 0.14.0
+   ships uses the rotation formula above.
+
+   **GR deep-review and test-regression are EXEMPT from pack-first.**
+   GR (step 4 below) reads raw diffs and raw docs — it is an independent
+   second engine whose value depends on the same source as role reviewers,
+   not a curated subset. `test-regression` always reads MISTAKES.md raw
+   (whole file required for regression coverage). These exemptions are
+   stated in the respective agent contracts.
+
 3. Each Reviewer writes
    `tasks/TASK-<n>-review-<type>.md` with verdict APPROVE /
    NEEDS-CHANGES / BLOCK and line-cited findings.
+
+3b. **Report diet contract.** Each review-report file produced in step 3
+   is a verdict-carrying report. Enforce the following:
+
+   When the agent's verdict is `APPROVE` or NIT-only:
+
+   > - **Frontmatter (MANDATORY):** verdict, coverage numbers, evidence paths (absolute paths to test files / to specific file:line ranges reviewed).
+   > - **Findings table:** `file:line` per finding, one row each; no prose per row beyond a one-sentence what.
+   > - **Reasoning section:** capped at **~40 lines** of prose.
+
+   When the agent's verdict is `RED`, `BLOCK`, `NEEDS-CHANGES`, or `FAIL`:
+
+   > verdict is `RED`, `BLOCK`, `NEEDS-CHANGES`, or `FAIL`. Full-prose reasoning is required so the receiving Dev / TL can act.
+
+   The following are EXEMPT from diet (never dieted, even at GREEN):
+
+   > - Dev diffs (`implementation/TASK-<n>-diff.md`) — they are the contract test agents verify.
+   > - Any "what I did not cover" / "known gaps" sections in test reports.
+   > - `gr-review.md` (GR deep-review artifact from 0.13.0).
+   > - `em-summary.md` (Imran-facing, 1-page format governed by ROLES §2.1).
+   > - `retro-M<n>.md` (autopilot per-milestone retros).
+   > - `merge-readiness.md` (TL composite verdict).
+
+   Mechanical check — verify no dev-diffs were accidentally dieted:
+   ```bash
+   grep -l 'coverage:' governance/requirements/REQ-<id>/implementation/TASK-*-diff.md
+   ```
+   The above command must return empty. If it prints any file, that file
+   was incorrectly dieted; remand to the Dev.
+
+3c. **Fix-iteration protocol (Feature 2 — incremental fix-iterations v2).**
+   Activated when a prior BLOCK or NEEDS-CHANGES verdict exists under `tasks/`
+   (a `TASK-<n>-review-<type>.md` with `verdict: BLOCK` or
+   `verdict: NEEDS-CHANGES`).
+
+   **Step 1 — Resolve changed files.**
+   Read each prior reviewer verdict's frontmatter `pinned_sha:` (or the diet
+   frontmatter SHA). Then:
+
+   ```bash
+   git diff --name-only <pinned-sha>..HEAD
+   ```
+
+   **Step 2 — Build reviewer surfaces.**
+   For each prior reviewer verdict's diet-frontmatter `files_reviewed:` field,
+   collect the repo-relative file paths. These form `tierSurfaces[reviewer]`.
+
+   **Step 3 — Run invalidation check.**
+   Invoke `scripts/invalidation.mjs` via absolute path resolved from
+   `$CLAUDE_PLUGIN_ROOT`:
+
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/invalidation.mjs" \
+     --changed "$(git diff --name-only <pinned-sha>..HEAD | paste -sd,)" \
+     --project-root <repo-root> \
+     --surfaces <path-to-surfaces-json>
+   ```
+
+   **Step 4 — Apply pin or re-run per reviewer.**
+
+   For each reviewer where `intersects: false`:
+   - Render the verdict as `GREEN@<pinned-sha> (pinned)` in the summary.
+   - Write an audit-trail entry at:
+     `governance/.audit/REQ-<id>/<timestamp>-pin-<random>.md`
+     with the following schema (verbatim from spec §Feature 2):
+
+     > Every pin decision is recorded in
+     > `governance/.audit/REQ-<id>/<timestamp>-pin-<random>.md` with:
+     > tier name, pinned-at sha, current sha, invalidation key computation
+     > output, decision.
+
+   - Do NOT re-invoke the original reviewer agent. Pinning is citation of
+     prior evidence — not approval. Iron rule §H.43 preserved: no agent is
+     invoked for pinned reviewers.
+
+   For each reviewer where `intersects: true`:
+   - Re-spawn the reviewer agent fresh (new agent invocation) against the
+     current HEAD.
+
+   **`reviewer-security` ALWAYS re-runs on the fix-iteration final SHA
+   regardless of invalidation result:**
+
+   > `reviewer-security` — auth invariant is global; a fix elsewhere can
+   > still expose it.
+
+   Cite spec §Feature 2 verbatim. Even if `intersects: false` for
+   `reviewer-security`, force re-run on every fix iteration.
+
+   **ALWAYS re-run on the final SHA regardless of invalidation result:**
+
+   > - `reviewer-security` — auth invariant is global; a fix elsewhere can
+   >   still expose it.
+   > - `test-regression` — MISTAKES.md is a moving target. Pin the MISTAKES.md
+   >   **content hash** in the regression verdict frontmatter
+   >   (`mistakes_sha256: <hex>`); if the hash on final SHA differs from the
+   >   pinned hash, force re-run.
+   > - G-7 contract-diff (when the REQ touched API contracts).
+   > - GR deep-review (Guardian findings apply across the whole diff, not
+   >   per-tier).
 
 4. **GR deep-review (independent second engine).** While the role
    reviewers run, also run the `gr` multi-specialist review engine on
@@ -53,6 +198,8 @@ Steps:
 
       If this fails (offline, unsupported platform), SKIP GR with a
       note in `gr-review.md` — never hard-block the pipeline on it.
+      On a fix iteration, re-attempt GR but do NOT hard-block if it
+      skip-notes again (preserves v0.13.0 GR skip-note fallback path).
 
    b) Determine the diff base: the REQ's target/base branch from
       `spec.md` (e.g. `develop`, `releases/stable`) — do NOT assume

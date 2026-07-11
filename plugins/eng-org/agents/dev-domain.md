@@ -43,6 +43,11 @@ helpers (level curve, time-bucket math); duplicate logic = drift.
 
 ## Required reading every invocation
 
+**Context pack first.** Read `governance/requirements/REQ-<id>/context-pack.md`
+before any raw governance doc. If the pack is insufficient (needed passage
+is in the exclusion manifest or pack does not exist), read the raw doc AND
+log it in your dev-report's `raw_doc_reads:` frontmatter list.
+
 CLAUDE.md, ROLES.md, CONSTITUTION.md (§B data, §E architecture,
 §B.13 95% gate), COVERAGE_THRESHOLDS.md, ARCHITECTURE.md (§3
 domain layer), MISTAKES.md filter [domain, purity, coverage,
