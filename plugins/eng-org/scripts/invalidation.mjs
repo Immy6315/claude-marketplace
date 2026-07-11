@@ -131,10 +131,12 @@ function computeClosure(changedFiles, dependencyGraph) {
   const queue = changedFiles.map((f) => ({ file: f, hop: 0 }));
   // Use an index cursor instead of queue.shift() to avoid O(N) per dequeue
   // on large queues (N-1 NIT from reviewer-performance, 2026-07-12).
-  let head = 0;
+  // Named `cursor` (not `head`) to distinguish from InvalidationResult.head,
+  // which is the current git SHA string — a totally different concept.
+  let cursor = 0;
 
-  while (head < queue.length) {
-    const { file, hop } = queue[head++];
+  while (cursor < queue.length) {
+    const { file, hop } = queue[cursor++];
 
     if (visited.has(file)) continue;
     visited.add(file);
@@ -170,8 +172,7 @@ function computeClosure(changedFiles, dependencyGraph) {
  */
 export function computeInvalidation({ changedFiles, projectRoot, tierSurfaces, dependencyGraph }) {
   if (!projectRoot || typeof projectRoot !== 'string') {
-    const err = new TypeError('projectRoot must be a non-empty string');
-    throw err;
+    throw new TypeError('projectRoot must be a non-empty string');
   }
 
   if (!Array.isArray(changedFiles)) {

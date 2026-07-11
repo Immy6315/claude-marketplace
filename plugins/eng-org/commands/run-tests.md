@@ -53,34 +53,8 @@ Steps:
    `governance/api-contract-registry.md`); a public-endpoint leak is a
    RED that no registry entry can waive.
 
-3b. **Report diet contract.** Each test-report file produced in step 3
-   is a verdict-carrying report. Enforce the following:
-
-   When the agent's verdict is `GREEN`:
-
-   > - **Frontmatter (MANDATORY):** verdict, coverage numbers, evidence paths (absolute paths to test files / to specific file:line ranges reviewed).
-   > - **Findings table:** `file:line` per finding, one row each; no prose per row beyond a one-sentence what.
-   > - **Reasoning section:** capped at **~40 lines** of prose.
-
-   When the agent's verdict is `RED`, `BLOCK`, `NEEDS-CHANGES`, or `FAIL`:
-
-   > verdict is `RED`, `BLOCK`, `NEEDS-CHANGES`, or `FAIL`. Full-prose reasoning is required so the receiving Dev / TL can act.
-
-   The following are EXEMPT from diet (never dieted, even at GREEN):
-
-   > - Dev diffs (`implementation/TASK-<n>-diff.md`) — they are the contract test agents verify.
-   > - Any "what I did not cover" / "known gaps" sections in test reports.
-   > - `gr-review.md` (GR deep-review artifact from 0.13.0).
-   > - `em-summary.md` (Imran-facing, 1-page format governed by ROLES §2.1).
-   > - `retro-M<n>.md` (autopilot per-milestone retros).
-   > - `merge-readiness.md` (TL composite verdict).
-
-   Mechanical check — verify no dev-diffs were accidentally dieted:
-   ```bash
-   grep -l 'coverage:' governance/requirements/REQ-<id>/implementation/TASK-*-diff.md
-   ```
-   The above command must return empty. If it prints any file, that file
-   was incorrectly dieted; remand to the Dev.
+3b. **Report diet contract.** Enforce the contract from
+   `plugins/eng-org/agents/REPORT_DIET.md §C–§F`.
 
 4. After all return, summarize: green/red count per task. If any
    RED, do NOT proceed to reviews — return to the relevant TL
@@ -115,12 +89,12 @@ Steps:
    containing commas — see Note below):
 
    ```bash
-   # Write changed files as a JSON array to a temp file (NUL-safe)
+   # Write changed files as a JSON array to a temp file (NUL-safe).
+   # If git-changed-to-json.mjs exits non-zero, fall through to fail-safe
+   # = FULL re-run of ALL tiers (see "Invalidation tool failure" below).
    git diff --name-only -z "<pinned-sha>"..HEAD \
-     | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().rstrip('\x00').split('\x00') if sys.stdin.read() else []))" \
+     | node "${CLAUDE_PLUGIN_ROOT}/scripts/git-changed-to-json.mjs" \
      > /tmp/changed-files-$$.json
-   # Equivalent: use node to produce the JSON array
-   # node -e "const d=require('fs').readFileSync('/dev/stdin');process.stdout.write(JSON.stringify(d.toString().split('\x00').filter(Boolean)))" < <(git diff --name-only -z "<pinned-sha>"..HEAD)
 
    node "${CLAUDE_PLUGIN_ROOT}/scripts/invalidation.mjs" \
      --changed-file /tmp/changed-files-$$.json \

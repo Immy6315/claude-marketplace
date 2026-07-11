@@ -62,8 +62,9 @@ coverage:
   line: <pct>
   branch: <pct>
 evidence:
-  - <absolute path or repo-relative path>:<line-range>
+  - <repo-relative path>:<line-range>
   - ...
+  # (repo-relative paths only — no machine-absolute paths; cross-ref MISTAKES 2026-07-10)
 raw_doc_reads: []           # fill in yourself: list every governance doc you read raw
                              # instead of from the context pack.
 ---
@@ -81,7 +82,7 @@ mistakes_sha256: <hex>      # SHA-256 of MISTAKES.md content at verdict time
 ## C. Diet contract — when verdict is GREEN / APPROVE / NIT-only
 
 - **Frontmatter (MANDATORY):** verdict, coverage numbers, evidence paths
-  (absolute paths to test files / to specific file:line ranges reviewed).
+  (repo-relative paths to test files / to specific file:line ranges reviewed).
 - **Findings table:** `file:line` per finding, one row each; no prose per
   row beyond a one-sentence what.
 - **Reasoning section:** capped at **~40 lines** of prose.
@@ -116,10 +117,11 @@ The caller (merge-readiness agent) verifies that:
    that claims GREEN / APPROVE has a reasoning section no longer than ~40 lines.
 
 3. Drift-guard sentinel: no agent file (other than this canonical doc) contains
-   the phrase "Cap LIFTED (unbounded prose required) when:" inlined — that phrase
-   belongs ONLY in this canonical doc. Presence in any non-canonical agent file = NOT-READY.
+   the phrase "Cap LIFTED — unbounded prose required when" inlined — that phrase
+   is the exact §D heading and belongs ONLY in this canonical doc. Presence in
+   any non-canonical agent file = NOT-READY.
    ```bash
-   grep -rl "Cap LIFTED (unbounded prose required) when:" \
+   grep -rl "Cap LIFTED — unbounded prose required when" \
      plugins/eng-org/agents/*.md \
      | grep -v REPORT_DIET.md
    ```

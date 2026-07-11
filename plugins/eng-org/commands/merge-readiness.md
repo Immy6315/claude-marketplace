@@ -205,9 +205,10 @@ Steps:
         at ~40 lines. Files with RED/BLOCK/NEEDS-CHANGES/FAIL verdicts are exempt.
 
      3. Drift-guard sentinel — no agent file (other than the canonical doc itself)
-        must contain the phrase "Cap LIFTED (unbounded prose required) when:" inlined:
+        must contain the phrase "Cap LIFTED — unbounded prose required when" inlined
+        (this is the exact §D heading in REPORT_DIET.md):
         ```bash
-        grep -rl "Cap LIFTED (unbounded prose required) when:" \
+        grep -rl "Cap LIFTED — unbounded prose required when" \
           plugins/eng-org/agents/*.md \
           | grep -v REPORT_DIET.md
         ```
