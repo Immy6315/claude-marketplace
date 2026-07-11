@@ -19,6 +19,23 @@ rule §H.43 — same agent never reused on the same artifact — prohibits
 the TL from also authoring its own pack. The orchestrator always spawns
 you as a separate, fresh subagent.
 
+## Skip rule — small REQs
+
+**If the REQ will spawn ≤ 3 downstream subagents** (e.g., a docs-only or
+Mode-A-adjacent REQ with 1 Dev task, 1 test run, 1 review), **SKIP the pack**.
+On small REQs the pack-authoring cost (1 full corpus read + write) dominates
+the savings it provides to the ≤ 3 downstream readers. When skipping:
+
+- Do not write `context-pack.md`.
+- Record `pack: skipped (small REQ — downstream subagent count ≤ 3)` in
+  `tl-<domain>-analysis.md` §Pack generation.
+- Downstream agents read raw docs directly and MUST log every raw doc in
+  their `raw_doc_reads:` frontmatter list.
+
+The downstream-subagent count is the total of: Dev agents + Test agents +
+Reviewer agents spawned across all tasks in the REQ. If uncertain, count
+conservatively (round up); skip only when clearly ≤ 3.
+
 ## What a context pack is
 
 A context pack is a **single Markdown file** at:
@@ -56,6 +73,23 @@ Even if only G-2 seems relevant to the REQ, you include G-1 through the
 end of the file verbatim. The reasoning: agents have consistently
 misapplied guardrails when they received only the "relevant" subset —
 side-effects of guardrails are cross-guardrail.
+
+### R-2b. `raw_doc_reads` field format
+
+When a downstream agent (Dev, Test, or Reviewer) finds the pack insufficient
+and reads a raw governance doc, it MUST log the read in its report's
+`raw_doc_reads:` frontmatter field using a **JSON-style list of repo-relative
+paths**:
+
+```yaml
+raw_doc_reads: ["governance/CONSTITUTION.md", "governance/MISTAKES.md"]
+```
+
+- Paths are repo-relative strings (not absolute paths — MISTAKES 2026-07-10).
+- An empty list (`[]`) means the pack was sufficient; the agent read no raw docs.
+- The exclusion manifest in this pack is the canonical reference for which docs
+  the pack omitted — a raw_doc_read for a doc listed as "included in full" in
+  the manifest is unexpected and should be noted by the TL.
 
 ### R-3. Exclusion manifest (mandatory last section)
 
@@ -194,3 +228,12 @@ The file structure is:
 - Omit the exclusion manifest.
 - Write a pack for a surface that is EXEMPT (test-regression's
   MISTAKES.md read and the GR engine path are always raw).
+- Write an empty or near-empty pack (< 10 lines of quoted content).
+  GUARDRAILS.md alone (R-2) guarantees the pack is non-empty; if you find
+  yourself writing fewer than 10 lines, you have miscounted the required
+  sections. A near-empty pack causes silent degradation — downstream agents
+  read a useless pack and may not notice the fallback trigger. If no
+  governance sections are relevant to this REQ beyond GUARDRAILS.md, the
+  pack is still valid (GUARDRAILS.md is always whole), but flag it in
+  the exclusion manifest as "All governance sections beyond GUARDRAILS.md
+  excluded — REQ does not touch those surfaces."

@@ -93,10 +93,13 @@ Steps:
 
    **Step 1 — Resolve changed files.**
    For each prior tier verdict, read its frontmatter `pinned_sha:` (or the
-   SHA embedded in the diet frontmatter). Then:
+   SHA embedded in the diet frontmatter). Before using it, validate the value
+   matches `/^[0-9a-f]{7,40}$/`. If not (non-hex, over-40 chars, or empty),
+   treat as tool failure and fall through to the fail-safe = FULL re-run of ALL
+   tiers. Never interpolate a raw frontmatter value into a shell command. Then:
 
    ```bash
-   git diff --name-only <pinned-sha>..HEAD
+   git diff --name-only "<pinned-sha>"..HEAD
    ```
 
    This is the changed-files list for the invalidation check.
@@ -107,16 +110,56 @@ Steps:
 
    **Step 3 — Run invalidation check.**
    Invoke `scripts/invalidation.mjs` via absolute path resolved from
-   `$CLAUDE_PLUGIN_ROOT`:
+   `$CLAUDE_PLUGIN_ROOT`. Use the NUL-safe `--changed-file` flag (JSON array
+   file) instead of `--changed <csv>` (comma-CSV cannot handle filenames
+   containing commas — see Note below):
 
    ```bash
+   # Write changed files as a JSON array to a temp file (NUL-safe)
+   git diff --name-only -z "<pinned-sha>"..HEAD \
+     | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().rstrip('\x00').split('\x00') if sys.stdin.read() else []))" \
+     > /tmp/changed-files-$$.json
+   # Equivalent: use node to produce the JSON array
+   # node -e "const d=require('fs').readFileSync('/dev/stdin');process.stdout.write(JSON.stringify(d.toString().split('\x00').filter(Boolean)))" < <(git diff --name-only -z "<pinned-sha>"..HEAD)
+
    node "${CLAUDE_PLUGIN_ROOT}/scripts/invalidation.mjs" \
-     --changed "$(git diff --name-only <pinned-sha>..HEAD | paste -sd,)" \
+     --changed-file /tmp/changed-files-$$.json \
      --project-root <repo-root> \
      --surfaces <path-to-surfaces-json>
    ```
 
+   **Note — back-compat `--changed <csv>`:** the `--changed` flag remains
+   available for convenience but has a documented limitation: filenames
+   containing commas are not handled correctly. Always prefer `--changed-file`
+   in automated pipelines.
+
+   The tool emits JSON to stdout with the following shape (matching the
+   `@typedef InvalidationResult` in `scripts/invalidation.mjs`):
+
+   ```json
+   {
+     "inputs": {
+       "changed": ["src/foo.ts", "src/bar.ts"],
+       "projectRoot": "<repo-root>",
+       "surfacesPath": "<path-to-surfaces-json>"
+     },
+     "head": "<current-git-sha>",
+     "perTier": {
+       "test-unit": { "intersects": true, "matched": ["src/foo.ts"] },
+       "test-integration": { "intersects": false, "matched": [] },
+       "reviewer-performance": { "intersects": false, "matched": [] }
+     }
+   }
+   ```
+
    Parse the JSON output to get `perTier[tier].intersects` for each tier.
+
+   **Invalidation tool failure — fail-safe rule.** If `invalidation.mjs`
+   exits non-zero, prints invalid JSON, or the surfaces file is
+   missing/malformed → **fail-safe = FULL re-run of ALL tiers** (never
+   pin on tool failure). Log the tool failure (stderr + exit code) in the
+   iteration log and in merge-readiness.md §Soft signals. Do NOT attempt
+   to infer a partial invalidation result from incomplete output.
 
    **Step 4 — Apply pin or re-run per tier.**
 
@@ -130,6 +173,22 @@ Steps:
      > `governance/.audit/REQ-<id>/<timestamp>-pin-<random>.md` with:
      > tier name, pinned-at sha, current sha, invalidation key computation
      > output, decision.
+
+     The audit record MUST contain a machine-parseable one-line-per-pin
+     header in the following format (write as the first content line after
+     the YAML frontmatter, or as the first line of the file body):
+
+     ```
+     PIN <tier-name> verdict=GREEN sha=<pinned-sha> head=<current-sha> reason=<no-intersect|...> invalidation=<path-to-json>
+     ```
+
+     Example:
+     ```
+     PIN test-unit verdict=GREEN sha=abc1234 head=def5678 reason=no-intersect invalidation=governance/.audit/REQ-X/20260712T120000-surfaces.json
+     ```
+
+     This one-line format allows `merge-readiness.md §Step 2c` and downstream
+     tooling to grep/aggregate pin decisions across REQs.
 
    - Do NOT re-invoke the original tier agent. Pinning is citation of prior
      evidence — not approval. Iron rule §H.43 (fresh agent per artifact — no
@@ -154,6 +213,13 @@ Steps:
    For `test-regression` specifically: compare `sha256(MISTAKES.md)` at
    current HEAD against the `mistakes_sha256` field in the prior verdict
    frontmatter. If they differ, force re-run even when `intersects: false`.
+
+   The hash is the **SHA-256 hex of the raw file bytes as-on-disk** — no
+   LF/CRLF normalization, no trailing-newline trim, no encoding conversion.
+   Canonical shell command:
+   ```bash
+   shasum -a 256 governance/MISTAKES.md | cut -d' ' -f1
+   ```
 
 5. **Docker teardown.** If you ran the step-1b preflight `up`,
    stop Docker now to reclaim RAM:

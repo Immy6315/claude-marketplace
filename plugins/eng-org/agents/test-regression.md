@@ -74,47 +74,17 @@ MODULE_REGISTRY.md (blast radius). The current dev-report.
 
 ### Report diet contract (v2)
 
-`TASK-<n>-test-regression-report.md` is a **verdict-carrying** report and
-is subject to the diet contract below.
+**Report diet:** follow the contract in `plugins/eng-org/agents/REPORT_DIET.md`
+(report filename token for THIS agent: `TASK-<n>-test-regression-report.md`).
 
-**Mandatory frontmatter (YAML block at top of every report):**
+Note: `test-regression` and `gr-review` always read raw governance docs (never from a context pack) — this tier's MISTAKES.md dependency requires the whole file. Exempt from context-pack-first rule per `REPORT_DIET.md` §A.3.
+
+Additional required frontmatter field for this agent:
 
 ```yaml
----
-verdict: GREEN | RED | BLOCKED
-coverage:
-  line: <pct>
-  branch: <pct>
-evidence:
-  - <absolute path or repo-relative path>:<line-range>
-  - ...
-raw_doc_reads: []           # populated by context-pack agent (TASK-3); add empty stub here
 mistakes_sha256: <hex>      # SHA-256 of MISTAKES.md content at the time this verdict was computed
                              # If MISTAKES.md content changes between iterations, re-run is forced
-                             # READ/WRITE behavior populated by incremental-fix-iterations (TASK-2)
----
 ```
-
-**Diet contract when verdict is GREEN:**
-
-> - **Frontmatter (MANDATORY):** verdict, coverage numbers, evidence paths (absolute paths to test files / to specific file:line ranges reviewed).
-> - **Findings table:** `file:line` per finding, one row each; no prose per row beyond a one-sentence what.
-> - **Reasoning section:** capped at **~40 lines** of prose.
-
-**Cap LIFTED (unbounded prose required) when:**
-
-> verdict is `RED`, `BLOCK`, `NEEDS-CHANGES`, or `FAIL`. Full-prose reasoning is required so the receiving Dev / TL can act.
-
-**EXEMPT from diet (never dieted, even at GREEN):**
-
-> - Dev diffs (`implementation/TASK-<n>-diff.md`) — they are the contract test agents verify.
-> - Any "what I did not cover" / "known gaps" sections in test reports.
-> - `gr-review.md` (GR deep-review artifact from 0.13.0).
-> - `em-summary.md` (Imran-facing, 1-page format governed by ROLES §2.1).
-> - `retro-M<n>.md` (autopilot per-milestone retros).
-> - `merge-readiness.md` (TL composite verdict).
-
-Note: `test-regression` and `gr-review` always read raw governance docs (never from a context pack) — this tier's MISTAKES.md dependency requires the whole file. Exempt from context-pack-first rule per Feature 3 contract.
 
 **`mistakes_sha256` behavior (Feature 2 — incremental fix-iterations v2):**
 
@@ -122,7 +92,12 @@ When issuing a verdict, compute the SHA-256 of the current MISTAKES.md file cont
 and write it into the `mistakes_sha256` frontmatter field (hex-encoded, no prefix):
 
 ```js
-// conceptual — use crypto.createHash('sha256').update(content).digest('hex')
+// Use the raw file bytes exactly as stored on disk — no LF/CRLF normalization,
+// no trailing-newline trim, no encoding conversion.
+// Canonical shell command:
+//   shasum -a 256 governance/MISTAKES.md | cut -d' ' -f1
+// Node equivalent:
+//   crypto.createHash('sha256').update(fs.readFileSync(path)).digest('hex')
 mistakes_sha256: "<sha256-hex-of-MISTAKES.md-at-verdict-time>"
 ```
 

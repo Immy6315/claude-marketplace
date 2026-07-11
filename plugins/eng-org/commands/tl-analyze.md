@@ -28,9 +28,17 @@ Steps:
      review plan, risks, rollback.
 
 4. **Pack generation (Feature 3 — context pack v2).** After all TL
-   analyses are complete, spawn a fresh `context-packer` subagent
-   (DISTINCT from any TL agent — iron rule §H.43 prohibits a TL from
-   authoring its own pack). Pass it:
+   analyses are complete:
+
+   **Skip rule — if the REQ will spawn ≤ 3 downstream subagents** (total
+   Dev + Test + Reviewer agents across all tasks), **do not spawn the
+   context-packer**. Record `pack: skipped (small REQ — downstream subagent
+   count ≤ 3)` in this TL analysis under §Pack generation. Downstream agents
+   read raw docs and log every raw doc in their `raw_doc_reads:` frontmatter.
+
+   **Otherwise**, spawn a fresh `context-packer` subagent (DISTINCT from any
+   TL agent — iron rule §H.43 prohibits a TL from authoring its own pack).
+   Pass it:
    - The REQ id.
    - The union of all "relevant-reading" files cited across every
      `tl-<domain>-analysis.md` for this REQ.
@@ -40,12 +48,27 @@ Steps:
    The `context-packer` agent writes
    `governance/requirements/REQ-<id>/context-pack.md` per its contract
    (verbatim extracts, GUARDRAILS.md always whole, exclusion manifest
-   mandatory). Do NOT spawn Devs until the pack file exists on disk.
+   mandatory). **After the packer returns, verify the pack file exists and
+   is non-empty (> 10 lines).** If the pack is empty or near-empty (< 10
+   lines), log a warning in this TL analysis and instruct downstream agents
+   to read raw docs instead (no silent degradation). Do NOT spawn Devs
+   until the pack file is confirmed present and non-empty.
 
    If `context-packer` fails or the pack file is missing, downstream
    Dev and Test agents fall back to reading raw docs and MUST log every
    raw doc they read in their report's `raw_doc_reads:` frontmatter list.
    This fallback is logged but does not block tl-assign.
+
+   **`raw_doc_reads` format:** entries must be a JSON-style list of repo-
+   relative paths:
+
+   ```yaml
+   raw_doc_reads: ["governance/CONSTITUTION.md", "governance/MISTAKES.md"]
+   ```
+
+   Each entry is a repo-relative path string. Absolute paths are NOT
+   permitted in `raw_doc_reads` (use repo-relative to avoid machine-specific
+   paths per MISTAKES 2026-07-10 REQ-02).
 
 5. After all TLs return and the pack is written, summarize: "TL analysis
    for REQ-<id> complete. Tasks proposed: <count>. Context pack written

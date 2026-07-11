@@ -26,7 +26,7 @@
  *   - No `any` inference; typed via JSDoc @typedef and @returns.
  */
 
-import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
@@ -36,8 +36,29 @@ import { parseArgs } from 'node:util';
 // ---------------------------------------------------------------------------
 
 /**
- * @typedef {'test-unit' | 'test-integration' | 'test-e2e' | 'test-regression' | 'test-load' | 'reviewer-architecture' | 'reviewer-security' | 'reviewer-performance' | 'reviewer-standards' | 'reviewer-observability' | 'reviewer-indexes' | string} TierName
+ * @typedef {'test-unit' | 'test-integration' | 'test-e2e' | 'test-regression' | 'test-load' | 'reviewer-architecture' | 'reviewer-security' | 'reviewer-performance' | 'reviewer-standards' | 'reviewer-observability' | 'reviewer-indexes'} TierName
  */
+
+/** @type {ReadonlySet<string>} */
+const KNOWN_TIERS = new Set([
+  'test-unit', 'test-integration', 'test-e2e', 'test-regression', 'test-load',
+  'reviewer-architecture', 'reviewer-security', 'reviewer-performance',
+  'reviewer-standards', 'reviewer-observability', 'reviewer-indexes',
+]);
+
+/**
+ * Runtime assertion that a tier name is one of the known literals.
+ * Throws at input-validation time so callers get a clear error instead of
+ * silently producing a result for a typo'd tier name (e.g. 'test-nit').
+ *
+ * @param {string} name
+ * @returns {void}
+ */
+export function assertKnownTier(name) {
+  if (!KNOWN_TIERS.has(name)) {
+    throw new Error(`Unknown tier: ${name}`);
+  }
+}
 
 /**
  * Per-tier invalidation result.
@@ -55,8 +76,35 @@ import { parseArgs } from 'node:util';
  */
 
 /**
- * Output of the pure core (head is resolved by the CLI wrapper, not the core).
+ * Inputs echoed back by the CLI wrapper (for self-describing audit records).
  * @typedef {{
+ *   changed: string[],
+ *   projectRoot: string,
+ *   surfacesPath: string,
+ *   changedFilePath?: string
+ * }} InvalidationInputsEcho
+ */
+
+/**
+ * Output of the pure core (head and inputs are filled by the CLI wrapper,
+ * not the core — keeping the core deterministic and I/O-free).
+ *
+ * CLI output shape example:
+ * {
+ *   "inputs": {
+ *     "changed": ["src/foo.ts", "src/bar.ts"],
+ *     "projectRoot": "/abs/path/to/repo",
+ *     "surfacesPath": "/abs/path/to/surfaces.json"
+ *   },
+ *   "head": "<current-git-sha>",
+ *   "perTier": {
+ *     "test-unit": { "intersects": true, "matched": ["src/foo.ts"] },
+ *     "test-integration": { "intersects": false, "matched": [] }
+ *   }
+ * }
+ *
+ * @typedef {{
+ *   inputs: InvalidationInputsEcho,
  *   head: string,
  *   perTier: Record<TierName, TierResult>
  * }} InvalidationResult
@@ -81,11 +129,12 @@ function computeClosure(changedFiles, dependencyGraph) {
   const visited = new Set();
   /** @type {Array<{file: string, hop: number}>} */
   const queue = changedFiles.map((f) => ({ file: f, hop: 0 }));
+  // Use an index cursor instead of queue.shift() to avoid O(N) per dequeue
+  // on large queues (N-1 NIT from reviewer-performance, 2026-07-12).
+  let head = 0;
 
-  while (queue.length > 0) {
-    const item = queue.shift();
-    if (!item) break;
-    const { file, hop } = item;
+  while (head < queue.length) {
+    const { file, hop } = queue[head++];
 
     if (visited.has(file)) continue;
     visited.add(file);
@@ -129,8 +178,8 @@ export function computeInvalidation({ changedFiles, projectRoot, tierSurfaces, d
     throw new TypeError('changedFiles must be an array');
   }
 
-  if (!tierSurfaces || typeof tierSurfaces !== 'object') {
-    throw new TypeError('tierSurfaces must be an object');
+  if (!tierSurfaces || typeof tierSurfaces !== 'object' || Array.isArray(tierSurfaces)) {
+    throw new TypeError('tierSurfaces must be a plain object (not an array)');
   }
 
   if (!dependencyGraph || typeof dependencyGraph !== 'object') {
@@ -212,7 +261,13 @@ function buildDependencyGraph(projectRoot) {
 
   walk(projectRoot);
 
-  const importRe = /(?:import\s+(?:[\s\S]*?\s+from\s+)?|require\s*\(\s*)['"]([^'"]+)['"]/g;
+  // Matches static imports, re-exports (import ... from), dynamic import(), and require().
+  // Handles:
+  //   import { x } from './foo'
+  //   import('./foo')           dynamic import
+  //   require('./foo')
+  //   export * from './foo'     re-export
+  const importRe = /(?:import\s*\(|import\s+(?:[\s\S]*?\s+from\s+)?|export\s+(?:[\s\S]*?\s+from\s+)|require\s*\(\s*)['"]([^'"]+)['"]/g;
 
   for (const absFile of filesToScan) {
     const relFile = path.relative(projectRoot, absFile);
@@ -252,6 +307,11 @@ function buildDependencyGraph(projectRoot) {
 
       let resolved = null;
       for (const candidate of candidates) {
+        // Defense-in-depth: reject candidates that escape projectRoot
+        // (e.g., crafted specifiers like '../../../etc/passwd').
+        const rel = path.relative(projectRoot, candidate);
+        if (rel.startsWith('..')) continue; // out-of-tree — skip edge
+
         try {
           const s = fs.lstatSync(candidate);
           if (s.isFile()) {
@@ -308,6 +368,7 @@ async function main() {
   const { values } = parseArgs({
     options: {
       changed: { type: 'string' },
+      'changed-file': { type: 'string' },
       'project-root': { type: 'string' },
       surfaces: { type: 'string' },
     },
@@ -315,12 +376,16 @@ async function main() {
   });
 
   const changedRaw = values['changed'];
+  const changedFilePath = values['changed-file'];
   const projectRootRaw = values['project-root'];
   const surfacesPath = values['surfaces'];
 
-  if (!changedRaw || !projectRootRaw || !surfacesPath) {
+  if ((!changedRaw && !changedFilePath) || !projectRootRaw || !surfacesPath) {
     process.stderr.write(
-      'Usage: node scripts/invalidation.mjs --changed <file>,<file> --project-root <path> --surfaces <path-to-json>\n'
+      'Usage: node scripts/invalidation.mjs \\\n' +
+      '  --changed-file <path-to-json-array>   # NUL-safe preferred\n' +
+      '  --changed <file>,<file>               # back-compat; commas in filenames unsupported\n' +
+      '  --project-root <path> --surfaces <path-to-json>\n'
     );
     process.exit(1);
   }
@@ -338,7 +403,36 @@ async function main() {
     throw err;
   }
 
-  const changedFiles = changedRaw.split(',').map((f) => f.trim()).filter(Boolean);
+  /** @type {string[]} */
+  let changedFiles;
+  if (changedFilePath) {
+    // --changed-file: read a JSON string array (NUL-safe upstream pipeline)
+    let rawJson;
+    try {
+      rawJson = fs.readFileSync(changedFilePath, 'utf8');
+    } catch (err) {
+      if (err && err.code === 'ENOENT') {
+        process.stderr.write(`Error: changed-file not found: ${changedFilePath}\n`);
+        process.exit(1);
+      }
+      throw err;
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(rawJson);
+    } catch (err) {
+      process.stderr.write(`Error: changed-file contains invalid JSON: ${changedFilePath}\n`);
+      process.exit(1);
+    }
+    if (!Array.isArray(parsed) || parsed.some((x) => typeof x !== 'string')) {
+      process.stderr.write(`Error: changed-file must be a JSON string array: ${changedFilePath}\n`);
+      process.exit(1);
+    }
+    changedFiles = parsed.filter(Boolean);
+  } else {
+    // --changed <csv>: back-compat; limitation: commas in filenames unsupported
+    changedFiles = /** @type {string} */ (changedRaw).split(',').map((f) => f.trim()).filter(Boolean);
+  }
 
   let tierSurfaces;
   try {
@@ -349,7 +443,32 @@ async function main() {
       process.stderr.write(`Error: surfaces file not found: ${surfacesPath}\n`);
       process.exit(1);
     }
+    if (err instanceof SyntaxError) {
+      process.stderr.write(`Error: surfaces file contains invalid JSON: ${surfacesPath}\n`);
+      process.exit(1);
+    }
     throw err;
+  }
+
+  // CLI-level surfaces validation: must be a plain object, not an array.
+  // Arrays pass `typeof tierSurfaces !== 'object'` silently → reject explicitly.
+  if (!tierSurfaces || typeof tierSurfaces !== 'object' || Array.isArray(tierSurfaces)) {
+    process.stderr.write(
+      `Error: surfaces file must contain a plain JSON object (got ${Array.isArray(tierSurfaces) ? 'array' : typeof tierSurfaces}): ${surfacesPath}\n`
+    );
+    process.exit(1);
+  }
+
+  // CLI-level tier-name validation: reject unknown tier names before shell
+  // interpolation (GR finding F10 — typos like 'test-nit' would silently
+  // produce a result with no warning without this check).
+  for (const tierName of Object.keys(tierSurfaces)) {
+    try {
+      assertKnownTier(tierName);
+    } catch (err) {
+      process.stderr.write(`Error: ${err.message} in surfaces file: ${surfacesPath}\n`);
+      process.exit(1);
+    }
   }
 
   const dependencyGraph = buildDependencyGraph(projectRoot);
@@ -363,13 +482,22 @@ async function main() {
   });
 
   result.head = head;
+  result.inputs = {
+    changed: changedFiles,
+    projectRoot,
+    surfacesPath: path.resolve(surfacesPath),
+    ...(changedFilePath ? { changedFilePath: path.resolve(changedFilePath) } : {}),
+  };
 
   process.stdout.write(JSON.stringify(result, null, 2) + '\n');
 }
 
-// Run CLI only when executed directly
+// Run CLI only when executed directly.
+// Use fileURLToPath() instead of new URL().pathname to correctly handle
+// spaces in path components (URL-percent-encoding vs raw path) — NIT from
+// TASK-2 reviewer-architecture (2026-07-12).
 const isMain = process.argv[1] &&
-  path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
 
 if (isMain) {
   main().catch((err) => {

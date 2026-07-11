@@ -73,10 +73,7 @@ disagrees with ROLES.md, ROLES.md wins.
 
 ## Required reading every invocation
 
-**Context pack first.** If `governance/requirements/REQ-<id>/context-pack.md`
-exists, read it before any raw governance doc. If the pack's exclusion
-manifest shows a needed doc was omitted, read that raw doc AND add its
-path to your report's `raw_doc_reads:` list.
+**Context pack first:** see `plugins/eng-org/agents/REPORT_DIET.md` §A.
 
 - `CLAUDE.md`
 - `governance/ROLES.md`

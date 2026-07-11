@@ -132,6 +132,101 @@ Steps:
         minimum: tier name, pinned-at sha, current sha, invalidation key
         computation output, decision. Incomplete audit file = NOT-READY.
 
+     4. **Reject pins on always-rerun tiers.** A pin claimed on ANY of the
+        following tiers is **INVALID regardless of invalidation result** →
+        NOT-READY:
+
+        > - `reviewer-security` — auth invariant is global.
+        > - `test-regression` — MISTAKES.md is a moving target.
+        > - G-7 contract-diff (when the REQ touched API contracts).
+        > - GR deep-review.
+
+        Grep the claimed pinned-tier list for any of these names. If any
+        match, the pin is invalid. Remand to the TL who ran the fix iteration
+        to produce a fresh verdict.
+
+   - **Step 2d — Canary pack_audit sweep (Feature 3 — context pack v2).**
+
+     When Feature 3 (context pack) is active for the REQ (i.e., a
+     `context-pack.md` was produced), the TL performs the following sweep
+     across all reviewer verdict files under `tasks/`:
+
+     1. **Verify exactly ONE non-null `pack_audit` field exists** across all
+        reviewer reports for this REQ. Grep:
+        ```bash
+        grep -l "^pack_audit:" tasks/TASK-*-review-*.md | \
+          xargs grep -l "^pack_audit: [^n]"
+        ```
+        - Zero files with a non-null `pack_audit` (when a pack was used) →
+          NOT-READY; remand to `/run-reviews` to select and run the canary.
+        - More than one file with non-null `pack_audit` → advisory warning
+          (multiple canaries ran); note in §Cross-domain notes.
+        - Exactly one file → proceed.
+
+     2. **Read the canary's `pack_audit` value.**
+        - `pack_audit: MATCH` → log `Canary pack_audit: PASS` in §Pack health.
+        - `pack_audit: "DIVERGENT: <what>"` → copy the `<what>` clause
+          verbatim into §Cross-domain notes AND mark NOT-READY unless the
+          assigned TL has recorded a disposition (CONFIRMED / FALSE-POSITIVE /
+          OUT-OF-SCOPE with evidence) for the divergence. An unresolved
+          DIVERGENT is a process-integrity failure — the pack is shipping
+          stale content.
+
+     3. **Soft-signal check — missing raw_doc_reads escape hatch.** For each
+        reviewer report that has an empty `raw_doc_reads: []` field: check
+        whether the report's findings cite a passage from the CONSTITUTION,
+        ROLES, or MISTAKES that the pack's `## Exclusion Manifest` lists as
+        omitted. If so, log an advisory note in §Cross-domain notes:
+        `[soft-signal] reviewer-<type> cited excluded passage <doc §section>
+        without logging a raw_doc_read — pack may have underserved this reviewer.`
+        This is advisory, NOT a blocker.
+
+     4. **Pack-health summary line** (always write, even if no divergence):
+
+        ```
+        Pack health: canary=<MATCH|DIVERGENT|NONE> raw_doc_reads_total=<N>
+          (per reviewer: <reviewer>:<count>, ...) forced-sampling=<PASS|FAIL|N/A>
+        ```
+
+        This one-line summary gives the EM visibility into pack quality per REQ.
+
+   - **Step 2e — Diet-compliance sweep + always-rerun drift guard.**
+
+     **Diet compliance:** verify verdict-carrying reports were not dieted incorrectly.
+
+     1. No dev-diff was accidentally dieted:
+        ```bash
+        grep -l 'coverage:' governance/requirements/REQ-<id>/implementation/TASK-*-diff.md
+        ```
+        Must return empty. Any file printed was incorrectly dieted; remand to the Dev.
+
+     2. Check that every GREEN/APPROVE verdict report (`TASK-*-review-*.md` and
+        `TASK-*-test-*.md`, NOT `TASK-*-diff.md`) has a reasoning section capped
+        at ~40 lines. Files with RED/BLOCK/NEEDS-CHANGES/FAIL verdicts are exempt.
+
+     3. Drift-guard sentinel — no agent file (other than the canonical doc itself)
+        must contain the phrase "Cap LIFTED (unbounded prose required) when:" inlined:
+        ```bash
+        grep -rl "Cap LIFTED (unbounded prose required) when:" \
+          plugins/eng-org/agents/*.md \
+          | grep -v REPORT_DIET.md
+        ```
+        Must return empty (zero non-canonical agent files). Any match = NOT-READY;
+        the inlined block must be replaced with the canonical reference to `REPORT_DIET.md`.
+
+     **Always-rerun drift guard:** assert the always-rerun blockquote in
+     `commands/run-tests.md §4b` and the always-rerun blockquote in
+     `commands/run-reviews.md §3c` are identical. Grep both files:
+
+     ```bash
+     grep -A4 "ALWAYS re-run on the final SHA" commands/run-tests.md
+     grep -A4 "ALWAYS re-run on the final SHA" commands/run-reviews.md
+     ```
+
+     If the two lists differ — NOT-READY on process integrity. The lists
+     define which tiers can never be pinned; divergence between the two command
+     files creates an inconsistency in the protocol.
+
    - Apply the merge-readiness template from ROLES.md §4:
      - Scope summary
      - Files changed list

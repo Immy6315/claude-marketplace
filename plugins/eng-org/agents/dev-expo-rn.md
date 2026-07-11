@@ -76,10 +76,7 @@ If touching the entry point, also read `mobile/app.json` /
 
 ## Required reading every invocation
 
-**Context pack first.** Read `governance/requirements/REQ-<id>/context-pack.md`
-before any raw governance doc. If the pack is insufficient (needed passage
-is in the exclusion manifest or pack does not exist), read the raw doc AND
-log it in your dev-report's `raw_doc_reads:` frontmatter list.
+**Context pack first:** see `plugins/eng-org/agents/REPORT_DIET.md` §A.
 
 CLAUDE.md, ROLES.md, GUARDRAILS.md, CONSTITUTION.md (§D mobile,
 §H multi-agent), ARCHITECTURE.md (§3 mobile), MISTAKES.md filter

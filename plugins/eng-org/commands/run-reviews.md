@@ -56,13 +56,18 @@ Steps:
    present as `null` in all reviewer report templates):
 
    ```yaml
-   pack_audit: "divergence: yes | no — <one sentence describing any passage
-     the pack omitted or misrepresented that affected this review>"
+   pack_audit: MATCH
+   # or, when divergence found:
+   pack_audit: "DIVERGENT: <one sentence describing the passage the pack omitted
+     or misrepresented that materially affected this review>"
    ```
 
-   `divergence: yes` means the canary found something in the raw doc that
-   the pack did not cover and that materially affected the review.
-   `divergence: no` means the pack was sufficient.
+   `MATCH` means the pack was sufficient — the canary found no passage in the
+   raw doc that was missing or misrepresented in the pack and that affected
+   the review outcome.
+   `DIVERGENT: <what>` means the canary found a specific passage in the raw doc
+   that the pack did not cover and that materially affected the review; the
+   `<what>` clause must cite the source doc section-id or passage.
 
    Non-canary reviewers set `pack_audit: null` (default; already in template).
 
@@ -118,10 +123,14 @@ Steps:
 
    **Step 1 — Resolve changed files.**
    Read each prior reviewer verdict's frontmatter `pinned_sha:` (or the diet
-   frontmatter SHA). Then:
+   frontmatter SHA). Before using it, validate the value matches
+   `/^[0-9a-f]{7,40}$/`. If not (non-hex, over-40 chars, or empty), treat as
+   tool failure and fall through to the fail-safe = FULL re-run of ALL
+   reviewers. Never interpolate a raw frontmatter value into a shell command.
+   Then:
 
    ```bash
-   git diff --name-only <pinned-sha>..HEAD
+   git diff --name-only "<pinned-sha>"..HEAD
    ```
 
    **Step 2 — Build reviewer surfaces.**
@@ -130,14 +139,33 @@ Steps:
 
    **Step 3 — Run invalidation check.**
    Invoke `scripts/invalidation.mjs` via absolute path resolved from
-   `$CLAUDE_PLUGIN_ROOT`:
+   `$CLAUDE_PLUGIN_ROOT`. Use the NUL-safe `--changed-file` flag (JSON array
+   file) instead of `--changed <csv>` (comma-CSV cannot handle filenames
+   containing commas — see Note below):
 
    ```bash
+   # Write changed files as a JSON array to a temp file (NUL-safe)
+   git diff --name-only -z "<pinned-sha>"..HEAD \
+     | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().rstrip('\x00').split('\x00') if sys.stdin.read() else []))" \
+     > /tmp/changed-files-$$.json
+
    node "${CLAUDE_PLUGIN_ROOT}/scripts/invalidation.mjs" \
-     --changed "$(git diff --name-only <pinned-sha>..HEAD | paste -sd,)" \
+     --changed-file /tmp/changed-files-$$.json \
      --project-root <repo-root> \
      --surfaces <path-to-surfaces-json>
    ```
+
+   **Note — back-compat `--changed <csv>`:** the `--changed` flag remains
+   available for convenience but has a documented limitation: filenames
+   containing commas are not handled correctly. Always prefer `--changed-file`
+   in automated pipelines.
+
+   **Invalidation tool failure — fail-safe rule.** If `invalidation.mjs`
+   exits non-zero, prints invalid JSON, or the surfaces file is
+   missing/malformed → **fail-safe = FULL re-run of ALL reviewers** (never
+   pin on tool failure). Log the tool failure (stderr + exit code) in the
+   iteration log and in merge-readiness.md §Soft signals. Do NOT attempt
+   to infer a partial invalidation result from incomplete output.
 
    **Step 4 — Apply pin or re-run per reviewer.**
 
@@ -151,6 +179,22 @@ Steps:
      > `governance/.audit/REQ-<id>/<timestamp>-pin-<random>.md` with:
      > tier name, pinned-at sha, current sha, invalidation key computation
      > output, decision.
+
+     The audit record MUST contain a machine-parseable one-line-per-pin
+     header in the following format (write as the first content line after
+     the YAML frontmatter, or as the first line of the file body):
+
+     ```
+     PIN <reviewer-name> verdict=GREEN sha=<pinned-sha> head=<current-sha> reason=<no-intersect|...> invalidation=<path-to-json>
+     ```
+
+     Example:
+     ```
+     PIN reviewer-performance verdict=GREEN sha=abc1234 head=def5678 reason=no-intersect invalidation=governance/.audit/REQ-X/20260712T120000-surfaces.json
+     ```
+
+     This one-line format allows `merge-readiness.md §Step 2c` and downstream
+     tooling to grep/aggregate pin decisions across REQs.
 
    - Do NOT re-invoke the original reviewer agent. Pinning is citation of
      prior evidence — not approval. Iron rule §H.43 preserved: no agent is

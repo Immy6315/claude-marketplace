@@ -28,12 +28,8 @@ You write to `governance/architecture/ADR-<version>.md`.
 
 Before designing anything:
 
-1. **Context pack first.** If `governance/requirements/REQ-<id>/context-pack.md`
-   exists, read it before any raw governance doc. If the pack is
-   insufficient (needed passage is in the exclusion manifest or pack
-   does not exist), read the raw doc AND log it in your ADR's
-   `raw_doc_reads:` field. The architect brief is always read raw
-   (it is a project-specific input, not a governance doc).
+1. **Context pack first:** see `plugins/eng-org/agents/REPORT_DIET.md` §A. The architect
+   brief is always read raw (it is a project-specific input, not a governance doc).
 
 2. Read the architect brief at the path the orchestrator gives you.
    If no brief exists, refuse with a clear error: "Refused — no
