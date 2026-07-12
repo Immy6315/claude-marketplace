@@ -40,6 +40,7 @@ The following agents and surfaces are EXEMPT from the context-pack-first rule:
 ```yaml
 ---
 verdict: APPROVE | NEEDS-CHANGES | BLOCK
+severity_verdict_policy_ack: true    # MUST be true — see §G. false or missing = template-validation failure.
 files_reviewed:
   - <path>:<line-range>
   - ...
@@ -47,6 +48,19 @@ findings_count:
   blocker: <n>
   concern: <n>
   nit: <n>
+findings:
+  # Every finding row MUST cite the §H rubric bullet applied.
+  # Example row:
+  #   - file: path/to/file.ts:123
+  #     severity: medium                     # one of: critical | high | medium | low
+  #     rubric_bullet: "§H medium — non-hot-path N+1"   # verbatim citation from §H
+  #     verdict_hint: warn                   # per §G mapping: critical|high→block, medium→warn, low→warn|note
+  #     text: "one-sentence what"
+  - file: <path>:<line>
+    severity: <critical|high|medium|low>
+    rubric_bullet: "<§H bullet cited verbatim>"
+    verdict_hint: <block|warn|note>
+    text: "<one-sentence what>"
 raw_doc_reads: []           # fill in yourself: list every governance doc you read raw
                              # instead of from the context pack.
 pack_audit: null            # set by the rotating canary reviewer; null for all others
@@ -126,3 +140,76 @@ The caller (merge-readiness agent) verifies that:
      | grep -v REPORT_DIET.md
    ```
    Must return empty (zero non-canonical agent files).
+
+---
+
+## G. Severity → verdict policy (canonical)
+
+> This section is the single source referenced by every `reviewer-*.md` agent
+> file in this plugin. Per-agent files carry a POINTER to this section, never
+> a copy — inlining across N files reintroduces the drift trap that
+> MISTAKES.md GR F1/F2/F12 already fixed for the diet contract.
+
+**Policy (mandatory, applies to every reviewer agent AND to the GR-review
+disposition table written by the assigned TL):**
+
+- Findings of severity `critical` or `high` ⇒ verdict may be `block`.
+- Findings of severity `medium` ⇒ verdict is `warn` (NEVER `block` on medium alone).
+- Findings of severity `low` ⇒ verdict is `warn` or `note` (NEVER `block`).
+- A verdict of `block` is only permitted when at least one finding is `critical` or `high`.
+- The `verdict_hint` field on each finding must obey the same mapping (so
+  downstream verdict-derivation — including the eng-org-bench judge fallback
+  path — stops mis-classifying medium/low findings as block-worthy).
+
+**Mechanical restatement (for graders / grep audits):**
+
+- `severity=critical` → `verdict_hint ∈ {block}`
+- `severity=high`     → `verdict_hint ∈ {block, warn}`
+- `severity=medium`   → `verdict_hint ∈ {warn}`               ← NEVER block on medium alone
+- `severity=low`      → `verdict_hint ∈ {warn, note}`         ← NEVER block
+
+A reviewer report whose top-level `verdict:` is `BLOCK` but whose
+`findings:` list contains zero `severity: critical` OR `severity: high` rows
+fails template validation and MUST be re-issued.
+
+---
+
+## H. Severity calibration rubric (canonical)
+
+> This section is the single source referenced by every `reviewer-*.md` agent
+> file. Every finding row in every review report MUST cite the specific bullet
+> applied, in the form `rubric_bullet: "§H <level> — <short-phrase>"`.
+> Findings without a cited bullet fail template validation.
+
+- **critical** — production outage risk, data loss risk, security breach with
+  no mitigation, or violation of a CONSTITUTION §H iron rule.
+- **high** — CONSTITUTION BLOCKER-list rule violation (missing
+  `protectedProcedure`, missing ownership check, raw SQL, secrets in code/logs,
+  missing rate limit on auth endpoints, N+1 on hot path, layering violation
+  such as `db` in `domain/`, XP-ledger UPDATE/DELETE, MISTAKES.md regression
+  on a tagged pattern).
+- **medium** — non-blocking correctness or maintainability concern with a
+  concrete file:line (e.g., a new N+1 query on a non-hot endpoint, a missing
+  index on a warm path, a swallowed catch on a non-hot path, a documented
+  code-drift).
+- **low** — style, naming, comment quality, minor duplication, nit-level
+  readability.
+
+---
+
+## I. Findings discipline (canonical)
+
+> This section is the single source referenced by every `reviewer-*.md` agent
+> file. All rules apply per-review-report and per-finding.
+
+- **Only report findings with concrete `file:line` evidence.** No speculative
+  findings. Prose containing "consider" / "might" / "could" MUST NOT be
+  promoted to a finding row; belongs in the reasoning section only.
+- **De-duplicate before reporting.** If the same defect appears at two
+  file:lines, report ONCE and list the additional file:lines in the same
+  row's evidence field, not as separate findings.
+- **Cap-signal:** if a reviewer is tempted to report more than **3 findings on
+  a diff smaller than 200 LOC**, that is a signal to consolidate — report the
+  3 most material and mention the rest in the reasoning section, not as
+  separate finding rows. This is a signal, not a hard cap; a reviewer with 5
+  concrete critical/high findings on a small diff should still emit all 5.
