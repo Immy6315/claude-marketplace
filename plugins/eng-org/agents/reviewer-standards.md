@@ -88,10 +88,11 @@ canonical file is authoritative on wording; if this file drifts from
   verdict at worst `NEEDS-CHANGES` (never BLOCK).
 
 **Per-finding row (mandatory shape):** every finding you emit MUST carry
-`severity:` (one of critical|high|medium|low) AND `rubric_bullet:` (a
-verbatim citation of the specific §H bullet applied, e.g.
-`rubric_bullet: "§H medium — non-hot-path N+1"`). Findings without a cited
-bullet fail template validation.
+`severity:` (one of critical|high|medium|low) AND `rubric_bullet:` (§B.1
+grammar v1 — `"<level>: <verbatim opening clause of the matching §H bullet>"`,
+value starting with the level token followed by `: `, e.g.
+`rubric_bullet: "medium: non-blocking correctness or maintainability concern"`).
+Findings without a cited bullet fail template validation.
 
 **Findings discipline:** only concrete `file:line` findings; no
 "consider" / "might" / "could" prose promoted to a row (belongs in the

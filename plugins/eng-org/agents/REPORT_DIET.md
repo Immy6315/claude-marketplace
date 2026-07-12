@@ -50,15 +50,21 @@ findings_count:
   nit: <n>
 findings:
   # Every finding row MUST cite the §H rubric bullet applied.
+  # rubric_bullet grammar (v1, machine-parseable):
+  #   rubric_bullet: "<level>: <verbatim opening clause of the matching §H bullet>"
+  #   where <level> ∈ critical | high | medium | low.
+  #   MACHINE CHECK: the quoted value MUST start with one of the four level
+  #   tokens followed by `: ` — i.e. it matches ^(critical|high|medium|low): .
+  #   Any other shape fails template validation.
   # Example row:
   #   - file: path/to/file.ts:123
   #     severity: medium                     # one of: critical | high | medium | low
-  #     rubric_bullet: "§H medium — non-hot-path N+1"   # verbatim citation from §H
+  #     rubric_bullet: "medium: non-blocking correctness or maintainability concern"
   #     verdict_hint: warn                   # per §G mapping: critical|high→block, medium→warn, low→warn|note
   #     text: "one-sentence what"
   - file: <path>:<line>
     severity: <critical|high|medium|low>
-    rubric_bullet: "<§H bullet cited verbatim>"
+    rubric_bullet: "<level>: <verbatim opening clause of the matching §H bullet>"
     verdict_hint: <block|warn|note>
     text: "<one-sentence what>"
 raw_doc_reads: []           # fill in yourself: list every governance doc you read raw
@@ -143,7 +149,7 @@ The caller (merge-readiness agent) verifies that:
 
 ---
 
-## G. Severity → verdict policy (canonical)
+## G. Severity → verdict policy (canonical, v1)
 
 > This section is the single source referenced by every `reviewer-*.md` agent
 > file in this plugin. Per-agent files carry a POINTER to this section, never
@@ -174,11 +180,13 @@ fails template validation and MUST be re-issued.
 
 ---
 
-## H. Severity calibration rubric (canonical)
+## H. Severity calibration rubric (canonical, v1)
 
 > This section is the single source referenced by every `reviewer-*.md` agent
 > file. Every finding row in every review report MUST cite the specific bullet
-> applied, in the form `rubric_bullet: "§H <level> — <short-phrase>"`.
+> applied, using the §B.1 grammar
+> `rubric_bullet: "<level>: <verbatim opening clause of the matching §H bullet>"`
+> — the value MUST start with one of critical|high|medium|low followed by `: `.
 > Findings without a cited bullet fail template validation.
 
 - **critical** — production outage risk, data loss risk, security breach with
@@ -197,7 +205,7 @@ fails template validation and MUST be re-issued.
 
 ---
 
-## I. Findings discipline (canonical)
+## I. Findings discipline (canonical, v1)
 
 > This section is the single source referenced by every `reviewer-*.md` agent
 > file. All rules apply per-review-report and per-finding.

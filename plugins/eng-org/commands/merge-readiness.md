@@ -215,6 +215,16 @@ Steps:
         Must return empty (zero non-canonical agent files). Any match = NOT-READY;
         the inlined block must be replaced with the canonical reference to `REPORT_DIET.md`.
 
+     4. Severity-policy ack + rubric grammar sweep (REPORT_DIET.md §G/§B.1) —
+        for EVERY `tasks/TASK-*-review-*.md`, grep the frontmatter:
+        ```bash
+        grep -L "^severity_verdict_policy_ack: true$" tasks/TASK-*-review-*.md
+        grep -L 'rubric_bullet: "\(critical\|high\|medium\|low\): ' tasks/TASK-*-review-*.md
+        ```
+        Both must return empty. Any file printed is INVALID — do NOT count it
+        toward the 5-approve review signal; remand to that reviewer to re-issue
+        with the ack field and §B.1-grammar `rubric_bullet:` citations.
+
      **Always-rerun drift guard:** assert the always-rerun blockquote in
      `commands/run-tests.md §4b` and the always-rerun blockquote in
      `commands/run-reviews.md §3c` are identical. Grep both files:
