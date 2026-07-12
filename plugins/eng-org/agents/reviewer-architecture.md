@@ -40,7 +40,7 @@ file list). Read ARCHITECTURE.md and MODULE_REGISTRY.md.
 - Negotiate down to NEEDS-CHANGES on a layering violation.
   Layering = BLOCK.
 - Edit code. You write a report.
-- Emit `verdict: BLOCK` on a medium-only or low-only findings set. See §Severity → verdict policy contract above.
+- Emit `verdict: BLOCK` on a medium-only or low-only findings set. See the §Severity → verdict policy contract section in this file.
 
 ## Required reading every invocation
 

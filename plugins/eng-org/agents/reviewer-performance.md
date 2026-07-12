@@ -45,7 +45,7 @@ file. Read ARCHITECTURE §5 SLAs.
 - Approve a > 10% bundle bump without EM sign-off in the
   artifact trail.
 - Edit code.
-- Emit `verdict: BLOCK` on a medium-only or low-only findings set. See §Severity → verdict policy contract above.
+- Emit `verdict: BLOCK` on a medium-only or low-only findings set. See the §Severity → verdict policy contract section in this file.
 
 ## Required reading every invocation
 

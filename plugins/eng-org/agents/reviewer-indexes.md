@@ -157,7 +157,7 @@ Before reading any new diff:
 - Approve semantic uniqueness enforced only in application code.
 - Approve a hot-path query whose test-load EXPLAIN shows Seq Scan.
 - Edit code yourself. (Hand findings to TL.)
-- Emit `verdict: BLOCK` on a medium-only or low-only findings set. See §Severity → verdict policy contract above.
+- Emit `verdict: BLOCK` on a medium-only or low-only findings set. See the §Severity → verdict policy contract section in this file.
 
 ## Required reading every invocation
 

@@ -147,22 +147,45 @@ The caller (merge-readiness agent) verifies that:
    ```
    Must return empty (zero non-canonical agent files).
 
+4. §G/§H/§I drift sentinel — cross-file BYTE-IDENTITY check (NOT a phrase
+   grep: the reviewer pointer blocks are sanctioned bounded restatements, so
+   a phrase-sentinel would false-positive on them). Extract the pointer block
+   — from the line `### Severity → verdict policy contract (v1)` to its end
+   (the line before the next `## ` heading) — from each of the 6
+   `reviewer-*.md` files; all 6 md5 hashes MUST be identical:
+   ```bash
+   for f in plugins/eng-org/agents/reviewer-*.md; do
+     awk '/^### Severity → verdict policy contract \(v1\)$/{flag=1}
+          flag && /^## /{flag=0} flag{print}' "$f" | md5
+   done | sort -u
+   ```
+   Must yield exactly ONE hash. Any mismatch = drift; restore the block from
+   the newest-intent version across all 6 files and re-verify until exactly
+   one hash remains.
+
 ---
 
 ## G. Severity → verdict policy (canonical, v1)
 
 > This section is the single source referenced by every `reviewer-*.md` agent
-> file in this plugin. Per-agent files carry a POINTER to this section, never
-> a copy — inlining across N files reintroduces the drift trap that
-> MISTAKES.md GR F1/F2/F12 already fixed for the diet contract.
+> file in this plugin. Per-agent files carry a pointer block with a BOUNDED
+> restatement (the `(v1)` pointer block) — never a verbatim copy of §G–§I in
+> full. The canonical text lives ONLY here; pinned policy sentences must not
+> be copied, and on any drift the canonical file wins. Unbounded inlining
+> across N files reintroduces the drift trap that MISTAKES.md GR F1/F2/F12
+> already fixed for the diet contract.
 
 **Policy (mandatory, applies to every reviewer agent AND to the GR-review
 disposition table written by the assigned TL):**
 
-- Findings of severity `critical` or `high` ⇒ verdict may be `block`.
-- Findings of severity `medium` ⇒ verdict is `warn` (NEVER `block` on medium alone).
-- Findings of severity `low` ⇒ verdict is `warn` or `note` (NEVER `block`).
+- Findings of severity `critical` or `high` ⇒ per-finding `verdict_hint` may be `block`.
+- Findings of severity `medium` ⇒ per-finding `verdict_hint` is `warn` (NEVER `block` on medium alone).
+- Findings of severity `low` ⇒ per-finding `verdict_hint` is `warn` or `note` (NEVER `block`).
 - A verdict of `block` is only permitted when at least one finding is `critical` or `high`.
+- Mapping: the top-level report `verdict:` (APPROVE|NEEDS-CHANGES|BLOCK) is
+  derived from the findings set and is distinct from per-finding
+  `verdict_hint` (`block`/`warn`/`note`) — `warn`/`note` are hint values
+  only, never a top-level verdict.
 - The `verdict_hint` field on each finding must obey the same mapping (so
   downstream verdict-derivation — including the eng-org-bench judge fallback
   path — stops mis-classifying medium/low findings as block-worthy).
@@ -217,7 +240,9 @@ fails template validation and MUST be re-issued.
   file:lines, report ONCE and list the additional file:lines in the same
   row's evidence field, not as separate findings.
 - **Cap-signal:** if a reviewer is tempted to report more than **3 findings on
-  a diff smaller than 200 LOC**, that is a signal to consolidate — report the
-  3 most material and mention the rest in the reasoning section, not as
-  separate finding rows. This is a signal, not a hard cap; a reviewer with 5
-  concrete critical/high findings on a small diff should still emit all 5.
+  a diff smaller than 200 LOC**, that is a signal to consolidate the
+  **medium and low** findings ONLY — report the 3 most material of those and
+  mention the rest in the reasoning section, not as separate finding rows.
+  Critical/high findings are NEVER consolidated away and are always emitted
+  as individual finding rows, regardless of count. This is a signal, not a
+  hard cap.

@@ -43,7 +43,7 @@ on logging and ARCHITECTURE §5 on SLOs.
 - Approve a metric named ad-hoc (must follow project naming
   convention).
 - Edit code.
-- Emit `verdict: BLOCK` on a medium-only or low-only findings set. See §Severity → verdict policy contract above.
+- Emit `verdict: BLOCK` on a medium-only or low-only findings set. See the §Severity → verdict policy contract section in this file.
 
 ## Required reading every invocation
 
