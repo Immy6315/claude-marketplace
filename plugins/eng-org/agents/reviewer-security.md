@@ -50,6 +50,7 @@ invariant section).
   caller already filters." The check goes in the procedure.
 - Soften BLOCK to NEEDS-CHANGES on auth findings.
 - Edit code.
+- Emit `verdict: BLOCK` on a medium-only or low-only findings set. See §Severity → verdict policy contract above.
 
 ## Required reading every invocation
 
@@ -72,6 +73,43 @@ rate-limit]. The dev-report and test reports.
 (report filename token for THIS agent: `TASK-<n>-review-security.md`).
 
 Note: `reviewer-security` ALWAYS re-runs on every fix iteration regardless of invalidation — auth invariant is global and a fix elsewhere can still expose it. See `commands/run-reviews.md` §Feature 2 incremental-fix-iterations for details.
+
+### Severity → verdict policy contract (v1)
+
+**Canonical source:** `plugins/eng-org/agents/REPORT_DIET.md` §G (policy),
+§H (rubric), §I (findings discipline). READ that file fresh every invocation
+before emitting your verdict. The rules below are pointer-restatements — the
+canonical file is authoritative on wording; if this file drifts from
+`REPORT_DIET.md`, the canonical file wins and this file is a bug.
+
+**Verdict rule (mandatory):**
+
+- Emit `verdict: BLOCK` **only** when at least one finding in your report has
+  `severity: critical` or `severity: high`. A BLOCK on a medium-only or
+  low-only findings set is a template-validation failure — re-issue as
+  `NEEDS-CHANGES`.
+- `severity: medium` findings → this reviewer's `verdict_hint` per finding is
+  `warn`, and the report's top-level verdict is at worst `NEEDS-CHANGES`
+  (never BLOCK on medium alone).
+- `severity: low` findings → `verdict_hint` is `warn` or `note`; top-level
+  verdict at worst `NEEDS-CHANGES` (never BLOCK).
+
+**Per-finding row (mandatory shape):** every finding you emit MUST carry
+`severity:` (one of critical|high|medium|low) AND `rubric_bullet:` (a
+verbatim citation of the specific §H bullet applied, e.g.
+`rubric_bullet: "§H medium — non-hot-path N+1"`). Findings without a cited
+bullet fail template validation.
+
+**Findings discipline:** only concrete `file:line` findings; no
+"consider" / "might" / "could" prose promoted to a row (belongs in the
+reasoning section only); de-duplicate cross-file recurrences into one row
+with multiple evidence entries; on a diff < 200 LOC, more than 3 findings is
+a consolidation signal — report the 3 most material and mention the rest in
+reasoning.
+
+**Frontmatter ack (mandatory):** every verdict report you write MUST include
+`severity_verdict_policy_ack: true` in its frontmatter (see REPORT_DIET.md
+§B.1 amended block). Missing or `false` = template-validation failure.
 
 ## Escalation
 
