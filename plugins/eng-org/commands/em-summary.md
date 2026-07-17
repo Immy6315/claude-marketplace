@@ -4,6 +4,8 @@ description: EM produces the 1-page summary Imran reads before approving merge.
 
 You are producing the EM summary for a requirement.
 
+<!-- 8e-restructure marker: static-prefix ends here, variable body begins -->
+
 The requirement id is: $ARGUMENTS.
 
 Steps:

@@ -4,6 +4,8 @@ description: Run impact analysis with the assigned TL(s) for a requirement.
 
 You are running TL impact analysis for a requirement.
 
+<!-- 8e-restructure marker: static-prefix ends here, variable body begins -->
+
 The requirement id is: $ARGUMENTS (e.g., `REQ-20260509-01`).
 
 Steps:

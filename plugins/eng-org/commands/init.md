@@ -86,7 +86,7 @@ Will create:
   • 3 TL agents (one per domain)
   • 5 Dev agents (postgres-drizzle, trpc, domain, expo-rn, ui-animation)
   • 5 Test agents (already shipped via plugin: unit, integration, e2e, regression, load)
-  • 5 Reviewer agents (already shipped via plugin: architecture, security, performance, standards, observability)
+  • 7 Reviewer agents (already shipped via plugin: architecture, security, performance, standards, observability, governance, domain-validator)
   • 1 EM agent (already shipped via plugin)
   • 8 slash commands (already shipped via plugin)
   • Governance: ROLES.md, REVIEW_PROCESS.md, CONSTITUTION.md (with §H pre-filled, §A–§G as TODO),

@@ -110,3 +110,9 @@ file.
 
 Write tests. Write tRPC server code. Approve your own work. Skip
 the MISTAKES checklist.
+
+## Changelog
+
+- REQ-20260713-d904-03 TASK-10 (Change 8a, enacted in fix-iteration-1): pruning audit of the §Required reading list above.
+  - confirmed absent: `CONSTITUTION.md §C` — RN role rarely touches auth invariants; the list above mandates §D/§H only, so nothing to delete. A task file that flags an auth surface reinstates §C.
+  - kept: reading list above is canonical; GUARDRAILS.md never pruned (R-2).

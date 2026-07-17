@@ -46,9 +46,8 @@ list. Read the screen file(s) under test.
 **Context pack first:** see `plugins/eng-org/agents/REPORT_DIET.md` §A.
 
 CLAUDE.md, ROLES.md, CONSTITUTION.md (§D mobile, §F UX),
-COVERAGE_THRESHOLDS.md (E2E required flows), SYSTEM_FLOWS.md,
-MISTAKES.md filter [e2e, detox, maestro, flake, ios]. The current
-dev-report.
+COVERAGE_THRESHOLDS.md (E2E required flows), SYSTEM_FLOWS.md.
+The current dev-report.
 
 ## Output
 
@@ -75,3 +74,9 @@ dev-report.
 
 Touch production code. Approve a merge. E2E-test things that
 unit/integration cover. Hide flake.
+
+## Changelog
+
+- REQ-20260713-d904-03 TASK-10 (Change 8a, enacted in fix-iteration-1): pruned the §Required reading list above.
+  - removed: `MISTAKES.md filter [e2e, detox, maestro, flake, ios]` — same rationale as test-integration; curated slice arrives via the context pack.
+  - kept: reading list above is canonical; test-report shape per REPORT_DIET §J; GUARDRAILS.md never pruned (R-2).

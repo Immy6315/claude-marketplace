@@ -195,6 +195,73 @@ Steps:
    shasum -a 256 governance/MISTAKES.md | cut -d' ' -f1
    ```
 
+4c. **Fix-iteration auto-distill to MISTAKES.md (mandatory — REQ-20260713-d904-03 §Amendment 2 Change 6).**
+
+   Every RED→GREEN fix iteration produces exactly ONE new MISTAKES.md entry, using the `Fix-iteration distill template` sub-section of `governance/MISTAKES.md` (do not paraphrase). The TL (or the fix-iteration dispatch that composed the fix) appends the entry.
+
+   Template (copy verbatim; substitute the `{{…}}` fields):
+
+   ```
+   ### {{YYYY-MM-DD}} — {{one-line what-broke}} (REQ-{{req-id}}, fix-iter-{{n}})  [{{root_cause_class}}]
+
+   **What broke:** {{failing test id or observable symptom, 1 line}}
+   **Root cause:** {{one imperative sentence naming the class}}
+   **Prevention:** {{one imperative sentence stating the durable rule}}
+   paths: {{glob of touched files, or ** if broad}}
+   ```
+
+   The three fixed fields (what-broke / root-cause / prevention) are the distill. The `paths:` glob line enables `mistakes-gate.mjs --match` for future G-2 regression-checks. Root-cause class tag is a short taxonomic label — examples: `null-optional-field`, `stale-import-after-rename`, `mock-vs-live-divergence`, `policy-prose`, `off-by-one`.
+
+   **AC-16 dedup rule:** if THIS fix-iteration's root cause matches an entry already appended earlier in THIS SAME REQ, extend that entry's title (add `fix-iter-<n>`) rather than creating a new entry. One entry may cover multiple fix-iterations in the same REQ that share a root cause. The gate (`mistakes-gate.mjs`, wired into merge-readiness Step 2e item 7) verifies REQ-id presence, not 1:1 iteration count.
+
+4d. **§Small-task test-unit + test-regression merge path (Change 8d).**
+
+    **Entry criteria (deterministic — all four must hold):**
+
+    1. The task's diff size is ≤ **200 LOC total** (TL-pinned threshold; if TL wants a different number for a specific REQ, TL overrides in `tl-<domain>-analysis.md §Test plan`; the default is 200 LOC). Detection command:
+       ```bash
+       git diff --shortstat "<task-base-sha>"..HEAD | \
+         awk '{sum += $4 + $6} END {print sum}'
+       ```
+       (Sums insertions + deletions across the touched files.)
+    2. The task's diff touches **no schema** — no file under `backend/drizzle/**`, `backend/src/db/schema.ts`, `**/*.sql`, or any migration surface. Detection command:
+       ```bash
+       git diff --name-only "<task-base-sha>"..HEAD -- \
+         'backend/drizzle/**' 'backend/src/db/schema.ts' '**/*.sql' \
+         | wc -l
+       ```
+       Zero = pass.
+    3. The task's diff touches **no API surface** — no file under `backend/src/trpc/routers/**`, no `backend/src/routes/**`, no `openapi/**`, no `**/*.graphql`. Detection command:
+       ```bash
+       git diff --name-only "<task-base-sha>"..HEAD -- \
+         'backend/src/trpc/routers/**' 'backend/src/routes/**' \
+         'openapi/**' '**/*.graphql' | wc -l
+       ```
+       Zero = pass.
+    4. The task's `TASK-<n>.md` does NOT mark `test_merge_forbidden: true` in its frontmatter (an explicit TL override for tasks where unit and regression MUST be independent — e.g., a test-discipline REQ).
+
+    If all four hold, spawn ONE agent (`test-unit`) with an EXTENDED contract: the agent authors both unit tests (its native tier per ROLES §2.4.1) AND regression tests (per test-regression's contract in ROLES §2.4.4). The single agent writes a MERGED report at `TASK-<n>-test-unit+regression-report.md` with both coverage-delta (unit) AND MISTAKES-tag coverage (regression) in the same frontmatter. Verdict is worst-of the two axes.
+
+    **Coverage obligation unchanged.** The 95% domain / 80% lib coverage gate (per COVERAGE_THRESHOLDS.md) applies to the merged report identically. Any MISTAKES entry the merged report failed to cover is still a RED against the regression axis. No coverage relaxation.
+
+    **Iron rule §H.43 preservation.** The merged agent is a NEW invocation (fresh subagent), not a reuse of test-unit or test-regression from a prior wave. §H.43 forbids re-using the SAME agent on the SAME artifact; a merged agent authoring a NEW artifact against a NEW task diff is a fresh invocation.
+
+    If ANY criterion fails, fall through to the standard 5-agent test dispatch from Step 2. No partial-merge — merge is all-or-nothing per task.
+
+4e. **§Deterministic skip-with-note criteria for `test-integration`, `test-e2e`, `test-load` (Change 8d).**
+
+    Today Step 2's prose says "skip-with-note if no UI surface touched" etc. — that leaves judgment to the agent, which produces inconsistent spawning across REQs. §4e pins deterministic diff-based rules:
+
+    | Tier | Skip-with-note when ALL of these hold | Rationale |
+    |---|---|---|
+    | `test-integration` | (a) `git diff --name-only <base>..HEAD -- 'backend/**' 'backend/src/trpc/**' 'backend/src/routes/**' \| wc -l` returns 0; (b) no schema change (per §4d criterion 2); (c) no API change (per §4d criterion 3) | Integration tests exercise the tRPC boundary + real Postgres. If no backend code touched AND no schema AND no API, there is no integration surface to test. |
+    | `test-e2e` | (a) `git diff --name-only <base>..HEAD -- 'mobile/app/**' 'mobile/components/**' \| wc -l` returns 0; (b) `mobile/package.json` untouched; (c) `mobile/app.json::expo.extra` untouched (G-3 boot-smoke also applies independently) | E2E tests exercise mobile UI flows via Maestro. No UI touched ⇒ no flow to exercise. |
+    | `test-load` | (a) `git diff --name-only <base>..HEAD -- 'backend/src/trpc/routers/**' 'backend/src/routes/**' \| wc -l` returns 0; (b) no schema change (per §4d criterion 2) | Load tests target hot endpoints. No endpoint code touched ⇒ no hot path change. |
+
+    **Escape hatch.** TL can force any tier to spawn via `force_test_spawn: [<tier>, ...]` in `tl-<domain>-analysis.md §Test plan` even when the deterministic skip criterion fires. Rationale must be written next to the force list (e.g., "REQ touched a shared config that silently affects integration idempotency"). Force lists are logged in the audit trail at `governance/.audit/REQ-<id>/`.
+
+    **Coverage threshold language unchanged.** `governance/COVERAGE_THRESHOLDS.md` is NOT edited by this REQ (per spec §Out-of-scope). §4e is a spawn-side optimization; the threshold set is untouched. A skip-with-note tier does not contribute to the coverage denominator for its axis (no tests authored = no coverage delta possible).
+
 5. **Docker teardown.** If you ran the step-1b preflight `up`,
    stop Docker now to reclaim RAM:
 

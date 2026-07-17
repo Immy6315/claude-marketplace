@@ -67,3 +67,9 @@ migration, postgres, index]. The current task file.
 Write tests (test-unit / test-integration agents do that). Approve
 your own work. Skip reading schema.ts on the grounds that "I just
 read it last task" — fresh invocation = fresh read.
+
+## Changelog
+
+- REQ-20260713-d904-03 TASK-10 (Change 8a, enacted in fix-iteration-1): pruning audit of the §Required reading list above.
+  - confirmed absent: `governance/SYSTEM_FLOWS.md` — the flow doc doesn't inform DDL; was never in this file's list, so nothing to delete.
+  - kept: reading list above is canonical; GUARDRAILS.md never pruned (R-2).

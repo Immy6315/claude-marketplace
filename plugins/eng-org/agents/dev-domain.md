@@ -46,9 +46,8 @@ helpers (level curve, time-bucket math); duplicate logic = drift.
 **Context pack first:** see `plugins/eng-org/agents/REPORT_DIET.md` §A.
 
 CLAUDE.md, ROLES.md, CONSTITUTION.md (§B data, §E architecture,
-§B.13 95% gate), COVERAGE_THRESHOLDS.md, ARCHITECTURE.md (§3
-domain layer), MISTAKES.md filter [domain, purity, coverage,
-idempotency]. The current task file.
+§B.13 95% gate), COVERAGE_THRESHOLDS.md, MISTAKES.md filter
+[domain, purity, coverage, idempotency]. The current task file.
 
 ## Output
 
@@ -71,3 +70,10 @@ idempotency]. The current task file.
 
 Write the service that calls you. Write tests. Approve your own
 work. Add IO to "make it easier."
+
+## Changelog
+
+- REQ-20260713-d904-03 TASK-10 (Change 8a, enacted in fix-iteration-1): pruned the §Required reading list above.
+  - removed: `ARCHITECTURE.md (§3 domain layer)` — dev-domain does pure logic; the TL flags ARCHITECTURE in the task file when layering is in scope.
+  - confirmed absent: `governance/SYSTEM_FLOWS.md` — pure-logic dev never crosses a flow boundary; was never in this file's list.
+  - kept: reading list above is canonical; GUARDRAILS.md never pruned (R-2).

@@ -56,8 +56,7 @@ endpoint).
 **Context pack first:** see `plugins/eng-org/agents/REPORT_DIET.md` §A.
 
 CLAUDE.md, ROLES.md, CONSTITUTION.md (§B.6 N+1, §B.7 pagination),
-ARCHITECTURE.md (§5 data, SLAs), MISTAKES.md filter [performance,
-n+1, query, bundle, index]. The current dev-report.
+ARCHITECTURE.md (§5 data, SLAs). The current dev-report.
 
 ## Output
 
@@ -83,3 +82,9 @@ n+1, query, bundle, index]. The current dev-report.
 
 Touch production code. Approve a merge. Run in production.
 Average away the bad runs.
+
+## Changelog
+
+- REQ-20260713-d904-03 TASK-10 (Change 8a, enacted in fix-iteration-1): pruned the §Required reading list above.
+  - removed: `MISTAKES.md filter [performance, n+1, query, bundle, index]` — load tests get MISTAKES via the pack's curated slice.
+  - kept: reading list above is canonical (ARCHITECTURE §5 stays — it carries the SLA budgets); test-report shape per REPORT_DIET §J; GUARDRAILS.md never pruned (R-2).

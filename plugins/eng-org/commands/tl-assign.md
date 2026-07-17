@@ -4,6 +4,8 @@ description: Dispatch Dev subagents per TL task decomposition; collect dev-repor
 
 You are dispatching Devs for a requirement.
 
+<!-- 8e-restructure marker: static-prefix ends here, variable body begins -->
+
 The requirement id is: $ARGUMENTS.
 
 Steps:
@@ -34,6 +36,15 @@ Steps:
      applicable MISTAKES.md entries, and a yes/no preservation
      answer for each. Empty or missing regression-check BLOCKs the
      dev-report.
+     - **Targeted injection via `mistakes-gate.mjs --match` (REQ-20260713-d904-03 §Amendment 2 Change 6):** instead of consuming MISTAKES.md whole-file, the Dev (or a helper script mode) resolves the applicable entries mechanically:
+
+       ```bash
+       node "${CLAUDE_PLUGIN_ROOT}/scripts/mistakes-gate.mjs" \
+         --match <touched-file> [<touched-file>...] \
+         --format json
+       ```
+
+       The tool returns MISTAKES entries whose `paths:` glob intersects any of the given files. Untagged legacy entries always match (as if `paths: **`) — no retro-editing of existing entries required. The Dev's regression-check.md MUST include a yes/no preservation answer for EVERY entry the `--match` mode returned, plus any entry the Dev separately identifies as relevant (the tool is a lower-bound, not an upper-bound).
    - Implement exactly the task scope (refuse to drift).
    - For UI changes: produce `tests/visual-parity-<screen>.png`
      side-by-side per G-1, and register any intentional divergence

@@ -114,3 +114,9 @@ The current task file.
 
 Write tests. Touch tRPC client wiring beyond consuming an
 existing hook. Approve your own work. Skip the MISTAKES checklist.
+
+## Changelog
+
+- REQ-20260713-d904-03 TASK-10 (Change 8a, enacted in fix-iteration-1): pruning audit of the §Required reading list above.
+  - confirmed absent: `CONSTITUTION.md §B/§C` — UI role rarely touches perf or auth invariants; the list above mandates §D/§F only, so nothing to delete.
+  - kept: reading list above is canonical; GUARDRAILS.md never pruned (R-2).

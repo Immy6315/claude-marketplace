@@ -101,9 +101,8 @@ capture responses. For each touched endpoint:
 **Context pack first:** see `plugins/eng-org/agents/REPORT_DIET.md` §A.
 
 CLAUDE.md, ROLES.md, CONSTITUTION.md (§B data, §C api, §C.15
-ownership invariant), COVERAGE_THRESHOLDS.md, MISTAKES.md
-filter [integration, test, ownership, idempotency, postgres].
-The current dev-report.
+ownership invariant), COVERAGE_THRESHOLDS.md. The current
+dev-report.
 
 ## Output
 
@@ -130,3 +129,9 @@ The current dev-report.
 
 Touch production code. Approve a merge. Skip the ownership
 test. Mock the DB.
+
+## Changelog
+
+- REQ-20260713-d904-03 TASK-10 (Change 8a, enacted in fix-iteration-1): pruned the §Required reading list above.
+  - removed: `MISTAKES.md filter [integration, test, ownership, idempotency, postgres]` — integration tests get MISTAKES via the pack's curated slice; test-regression is the whole-file reader per EXEMPT surfaces (context-packer §EXEMPT surfaces).
+  - kept: reading list above is canonical; test-report shape per REPORT_DIET §J; GUARDRAILS.md never pruned (R-2).

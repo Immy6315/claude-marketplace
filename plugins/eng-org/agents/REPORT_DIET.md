@@ -40,6 +40,15 @@ The following agents and surfaces are EXEMPT from the context-pack-first rule:
 ```yaml
 ---
 verdict: APPROVE | NEEDS-CHANGES | BLOCK
+verdict_derived: true                # MUST be true — the verdict is DERIVED from max confirmed finding severity per §G.1.
+                                     # false or missing = template-validation failure (verdict-lint hard-fails).
+verdict_derivation: "<one-line>"     # MUST be present. Example values:
+                                     #   "1× confirmed high (P1) at auth.ts:42, missing ownership check"
+                                     #   "0 confirmed findings"
+                                     #   "3× confirmed low (P3) only — nits-only"
+                                     # Informational — the lint (verdict-lint.mjs) computes the derived
+                                     # verdict from the findings array; this string is not trusted for logic,
+                                     # only for human-audit readability.
 severity_verdict_policy_ack: true    # MUST be true — see §G. false or missing = template-validation failure.
 files_reviewed:
   - <path>:<line-range>
@@ -72,6 +81,10 @@ raw_doc_reads: []           # fill in yourself: list every governance doc you re
 pack_audit: null            # set by the rotating canary reviewer; null for all others
 ---
 ```
+
+**Mandatory body derivation line (v1.1).** In addition to the frontmatter above, every review file body MUST contain EXACTLY ONE line matching the regex
+`^Verdict: (BLOCK|NEEDS-CHANGES|APPROVE) \(derived — .+\)$`.
+Example: `Verdict: BLOCK (derived — 1× confirmed high at auth.ts:42, missing ownership check)`. Zero matches → NOT-READY (missing derivation line); more than one → NOT-READY (ambiguous verdict). The mechanical verdict-lint (`plugins/eng-org/scripts/verdict-lint.mjs`, wired into `commands/run-reviews.md` Step 3d and `commands/merge-readiness.md` Step 2e items 5 and 6) hard-errors on mismatch between the frontmatter `verdict:` and this body line.
 
 ### B.2 Test reports (`TASK-<n>-test-<type>-report.md`)
 
@@ -163,6 +176,13 @@ The caller (merge-readiness agent) verifies that:
    the newest-intent version across all 6 files and re-verify until exactly
    one hash remains.
 
+5. **Derivation-line format sentinel (v1.1, new — REQ-20260713-d904-03).** Grep every `TASK-*-review-*.md` for a line matching the mandatory derivation-line regex:
+   ```bash
+   grep -LE '^Verdict: (BLOCK|NEEDS-CHANGES|APPROVE) \(derived — .+\)$' \
+     governance/requirements/REQ-<id>/tasks/TASK-*-review-*.md
+   ```
+   Must return empty. Zero matches on a review file → NOT-READY (missing derivation line); more than one match on the same file → NOT-READY (ambiguous verdict). This is the readable companion to the mechanical `verdict-lint.mjs` sweep (Step 2e item 5 of `commands/merge-readiness.md`) — the two together ensure the verdict is BOTH derived and human-auditable.
+
 ---
 
 ## G. Severity → verdict policy (canonical, v1)
@@ -201,6 +221,78 @@ A reviewer report whose top-level `verdict:` is `BLOCK` but whose
 `findings:` list contains zero `severity: critical` OR `severity: high` rows
 fails template validation and MUST be re-issued.
 
+### G.1 Derivation rule (mandatory, enforced by verdict-lint) — v1.1
+
+> This is the enforcement successor to the guidance in §G above. The verdict is
+> DERIVED, not decided. The `plugins/eng-org/scripts/verdict-lint.mjs` script
+> hard-errors on any mismatch between the derived verdict and the declared
+> `verdict:` field. Softening is BANNED — see the last paragraph of this section.
+
+**Canonical derivation mapping.** Given the set S of severities appearing in confirmed findings (severity vocabulary normalized per the alignment table in §H below):
+
+- `max(confirmed severity) ∈ {P0, critical, blocker}` → `Verdict: BLOCK`
+- `max(confirmed severity) ∈ {P1, high}` → `Verdict: BLOCK`
+- `max(confirmed severity) ∈ {P2, medium, concern}` → `Verdict: NEEDS-CHANGES`
+- `max(confirmed severity) ∈ {P3, low, nit}` alone (no P2/higher present) → `Verdict: APPROVE`
+- `max(confirmed severity) ∈ {P3, low, nit}` alongside any P2 → `Verdict: NEEDS-CHANGES` (P2 dominates)
+- Zero confirmed findings → `Verdict: APPROVE`
+
+**Reviewer output line directive.** Every review file body MUST contain exactly one line matching `Verdict: (BLOCK|NEEDS-CHANGES|APPROVE) (derived — <reasoning>)`. Example: `Verdict: BLOCK (derived — 1× confirmed high at backend/src/trpc/routers/auth.ts:42, missing ownership check)`. The §B.1 frontmatter's `verdict:` field is the authoritative value the lint compares against; the body line is the human-audit companion.
+
+**Softening is banned (verbatim clause).** The verdict is a mechanical function of confirmed findings, not a judgment call. You do not soften BLOCK to NEEDS-CHANGES because most findings are nits. You do not soften NEEDS-CHANGES to APPROVE because the P2 finding "feels minor". If you disagree with the severity assigned to a finding, either downgrade the severity in the findings array (with justification in the finding's `text` field) or preserve it; either way the verdict is DERIVED from the final severity set.
+
+### G.1.a Category-ceiling table (mandatory, enforced by verdict-lint) — v1.4
+
+> Added REQ-20260715-d904-02 (cand-8). v1.4 REQ-20260715-d904-03 (cand-9): §G.1.a anchor
+> shrunk ≥ 30% (prose examples collapsed; historical marker-regex prose removed; frozen-set
+> rows merged). `blast_radius: true` frontmatter is the SOLE escape. Enforcement:
+> `verdict-lint.mjs` `computeDerivedVerdict`; this anchor and the lint ship in ONE commit
+> (ADR-003 R-20). Drift between rows below and lint = contract violation.
+
+**Ceiling rule (hard enforcement, not a signal or cap):** A finding is WARN-capped when its
+category belongs to the ceiling set AND its frontmatter does NOT carry `blast_radius: true` — in
+which case the lint script downgrades a P0/P1 severity to P2 before the max-severity aggregation.
+A finding in a ceiling category whose frontmatter carries `blast_radius: true` is NOT capped —
+its full P0/P1 severity feeds the §G.1 max-severity rule and may yield BLOCK. Evidence text does
+NOT affect the ceiling; only the explicit `blast_radius: true` frontmatter flag does.
+
+**Category-ceiling table:**
+
+| Category token(s) | Ceiling verdict | Escape-hatch condition |
+|---|---|---|
+| All `CEILING_CATEGORIES` tokens: `perf`, `memory-leak`, `leak`, `broken-pagination`, `pagination`, `n+1`, `missing-index` | NEEDS-CHANGES (WARN) | `blast_radius: true` frontmatter on the finding row |
+| `security`, `sql-injection`, `idor`, `missing-auth`, `race-condition`, `secret-in-logs` | No ceiling — security-category findings ALWAYS derive by max-severity (§G.1 unchanged) | — |
+| Any other category / `null` / unknown | No ceiling — §G.1 max-severity rule unchanged | — |
+
+**Blast-radius escape-hatch — ONE channel (frontmatter only):**
+
+Frontmatter `blast_radius: true` on the finding row is the SOLE escape from the ceiling. A
+reviewer who has genuine blast-radius evidence (measured heap dump, cited P0 trace, confirmed
+hot-path profiling, etc.) MUST declare it explicitly by setting `blast_radius: true` in the
+finding's frontmatter — evidence text content is NOT consulted by the lint engine and does NOT
+affect the derived verdict. This makes the escape deterministic and non-gameable: defect
+descriptions inherently contain blast-radius-sounding vocabulary ("unbounded", "full table scan",
+"hot-path") that would collide with any free-text pattern set.
+
+### G.2 Few-shot examples (mandatory) — v1.1
+
+**Example 1 — one confirmed high + 5 nits ⇒ BLOCK (NOT NEEDS-CHANGES).**
+
+> Findings: 1× high (auth.ts:42, missing ownership check), 5× low (naming, comments).
+> Derived: `max = high` ⇒ `Verdict: BLOCK (derived — 1× confirmed high at auth.ts:42, missing ownership check)`.
+> Trap: do NOT soften to NEEDS-CHANGES because most findings are nits — the P1 dominates.
+
+**Example 2 — three P3 nits alone ⇒ APPROVE (NOT NEEDS-CHANGES).**
+
+> Findings: 3× low (comment typos, unused import, magic number).
+> Derived: `max = low` and no P2+ present ⇒ `Verdict: APPROVE (derived — 3× confirmed low, nits-only)`.
+> Trap: do NOT emit NEEDS-CHANGES for style-only findings.
+
+**Example 3 — mixed P2 + P3 ⇒ NEEDS-CHANGES.**
+
+> Findings: 1× medium (query without index on warm path), 2× low (naming).
+> Derived: `max = medium` (P2) ⇒ `Verdict: NEEDS-CHANGES (derived — 1× confirmed medium at pets.ts:88, missing index on warm path)`.
+
 ---
 
 ## H. Severity calibration rubric (canonical, v1)
@@ -212,19 +304,34 @@ fails template validation and MUST be re-issued.
 > — the value MUST start with one of critical|high|medium|low followed by `: `.
 > Findings without a cited bullet fail template validation.
 
-- **critical** — production outage risk, data loss risk, security breach with
-  no mitigation, or violation of a CONSTITUTION §H iron rule.
-- **high** — CONSTITUTION BLOCKER-list rule violation (missing
-  `protectedProcedure`, missing ownership check, raw SQL, secrets in code/logs,
-  missing rate limit on auth endpoints, N+1 on hot path, layering violation
-  such as `db` in `domain/`, XP-ledger UPDATE/DELETE, MISTAKES.md regression
-  on a tagged pattern).
-- **medium** — non-blocking correctness or maintainability concern with a
-  concrete file:line (e.g., a new N+1 query on a non-hot endpoint, a missing
-  index on a warm path, a swallowed catch on a non-hot path, a documented
-  code-drift).
-- **low** — style, naming, comment quality, minor duplication, nit-level
-  readability.
+**Vocabulary alignment table (v1.1 — anchoring the P0/P1/P2/P3 tokens onto the critical|high|medium|low severity tokens and the blocker|concern|nit finding-vocab tokens).** All three vocabularies map onto the same 4 severity levels; the verdict-lint script and the derivation rule in §G.1 accept any of them:
+
+| §H severity | P-level | Blocker vocab | Derives verdict |
+|---|---|---|---|
+| critical | P0 | blocker | BLOCK |
+| high | P1 | blocker | BLOCK |
+| medium | P2 | concern | NEEDS-CHANGES |
+| low | P3 | nit | APPROVE (only-P3, i.e., no P2 present) or NEEDS-CHANGES (P2+P3 mix) |
+
+- **critical (P0, blocker)** — production outage risk, data loss risk, security breach with no mitigation, or violation of a CONSTITUTION §H iron rule. Anchored code examples:
+  - Example (blocker): hardcoded production DB password in `backend/src/db/config.ts` — `const DB_PASSWORD = "hunter2prod";`.
+  - Example (blocker): unauthenticated endpoint returning all-user PII — `publicProcedure.query(() => db.select().from(users))` where `users` contains email + phone.
+  - Example (blocker): migration DROPS a production table without a data-preservation step — `await db.execute(sql\`DROP TABLE user_settings\`)` inside a Drizzle migration.
+
+- **high (P1, blocker)** — CONSTITUTION BLOCKER-list rule violation (missing `protectedProcedure`, missing ownership check, raw SQL, secrets in code/logs, missing rate limit on auth endpoints, N+1 on hot path, layering violation such as `db` in `domain/`, XP-ledger UPDATE/DELETE, MISTAKES.md regression on a tagged pattern). Anchored code examples:
+  - Example (blocker): missing ownership check on `pets.update` — `.update(pets).set(...).where(eq(pets.id, input.id))` without also `and(eq(pets.userId, ctx.user.id))`.
+  - Example (blocker): raw SQL with unescaped user input outside Drizzle `sql\`\`` — `db.execute(\`SELECT * FROM users WHERE email='\${email}'\`)`.
+  - Example (blocker): N+1 on a hot-path — `for (const pet of pets) { await db.select().from(vitals).where(eq(vitals.petId, pet.id)); }` inside a list-pets route.
+
+- **medium (P2, concern)** — non-blocking correctness or maintainability concern with a concrete file:line (e.g., a new N+1 query on a non-hot endpoint, a missing index on a warm path, a swallowed catch on a non-hot path, a documented code-drift). Anchored code examples:
+  - Example (concern): missing index on a warm-path WHERE column — `ordersByStatus` query hits `orders.status` on a 5k-row table without a matching index in `schema.ts`.
+  - Example (concern): swallowed catch on a non-hot recovery path — `try { await refreshCache(); } catch {}` in a background sync worker (should log at minimum).
+  - Example (concern): documentation drift — README claims endpoint `/api/x` returns `{count, items}` but the handler returns `{total, results}` (users rely on shape).
+
+- **low (P3, nit)** — style, naming, comment quality, minor duplication, nit-level readability. Anchored code examples:
+  - Example (nit): inconsistent naming — `getPetById` in one file, `pet_by_id` in a sibling.
+  - Example (nit): unused import — `import { unused } from 'lodash'` at top of `foo.ts` with zero references below.
+  - Example (nit): magic number without a named constant — `if (retries > 3)` in a retry loop (no `const MAX_RETRIES = 3` binding).
 
 ---
 
@@ -246,3 +353,109 @@ fails template validation and MUST be re-issued.
   Critical/high findings are NEVER consolidated away and are always emitted
   as individual finding rows, regardless of count. This is a signal, not a
   hard cap.
+
+### I.1 Evidence gate (mandatory, v1.1 — REQ-20260713-d904-03)
+
+- **Evidence gate (mandatory).** A finding may only be reported when BOTH of the following hold: (a) a concrete `file:line` citation exists in the source repo; (b) a concrete failure/exploit path is described in the finding's `text` field — the sentence must explain WHY it fails and HOW it manifests, not merely "consider" or "might".
+- **Banned phrases in finding rows:** `"could potentially"`, `"might be"`, `"consider whether"`, `"it may be that"`. These belong in the reasoning section prose, NEVER as a finding row promoted to the `findings:` array.
+- **Duplicate collapse (strengthened).** If the same defect appears at multiple `file:line`s across the diff, ONE finding row with multiple evidence entries — not multiple rows.
+
+> **Recall-protection clause (LOAD-BEARING — verbatim, do not paraphrase):**
+>
+> This gate applies to EVIDENCE QUALITY. It does NOT reduce the surface area you inspect. If you see a real defect, report it — `file:line` + failure path is the requirement; don't skip real findings for lack of certainty about severity. If you're uncertain WHICH severity applies, choose the lower level and document your reasoning in the finding's `text` field — but STILL report the finding. Under-reporting real defects to appear "precise" is the failure mode this gate does NOT sanction.
+
+## J. Test-report diet — extend Report Diet v2 to `TASK-<n>-test-<type>-report.md`
+
+Report Diet v2 landed on `TASK-<n>-dev-report.md` in 0.14.0 (−42% payload).
+REQ-20260713-d904-03 Change 8a extends the same discipline to test reports.
+
+### J.1 When to diet a test report
+
+Apply the diet contract §C when ALL of:
+- Verdict is `GREEN` (not `RED`, not `BLOCKED`).
+- Coverage number reported meets the threshold (per COVERAGE_THRESHOLDS.md).
+- Zero flakes on the reported run (or documented flake with retry-passed).
+- No new dependencies added by the tests themselves.
+
+### J.2 Test-report diet shape
+
+Dieted test-report retains:
+- Frontmatter (all fields per §B.2, unchanged).
+- One-paragraph "What I did" section (≤ 8 lines).
+- Coverage / latency / flake summary table.
+- "What I did NOT cover" section (never dieted — this is the RED-flag surface).
+
+Removed under diet:
+- Play-by-play test enumeration ("test 1 asserted X, test 2 asserted Y, ...")
+  — the coverage table and the frontmatter's `tests_added:` list already carry this.
+- Per-assertion prose explanation — the test file itself IS the spec.
+- Screenshots / logs of GREEN test runs (evidence paths in frontmatter suffice).
+
+### J.3 Cap lifted (Report Diet §D applies to test reports too)
+
+The cap lifts under the same conditions as §D:
+- Verdict is `RED` / `BLOCKED` — reasoning is unbounded.
+- Coverage number fell below threshold — reasoning is unbounded (must explain
+  the untestable surface).
+- Any NEW MISTAKES entry authored by this test run — the RED→GREEN fix
+  iteration distill template from `commands/run-tests.md §4c` (TASK-8) applies
+  and is unbounded.
+
+### J.4 Diet-compliance sweep (merge-readiness Step 2e extension)
+
+The existing Step 2e diet-compliance sweep (from TASK-1 / prior REQs) checks
+`TASK-*-review-*.md` and `TASK-*-test-*-report.md` for cap compliance under
+GREEN/APPROVE verdicts. §J.2 formalises the test-report side of the sweep — no
+new grep is added; the existing "~40-line reasoning cap" (Step 2e item 2)
+already catches over-verbose GREEN test reports.
+
+## K. Review-report diet — extend Report Diet v2 to `TASK-<n>-review-<type>.md`
+
+### K.1 When to diet a review report
+
+Apply the diet contract §C when ALL of:
+- Verdict is `APPROVE` (under §G.1 a nits-only / P3-only findings set always derives `APPROVE`; a `NEEDS-CHANGES` verdict implies a confirmed P2 and is never dieted).
+- No `UNRESOLVED` re-verdicts on prior findings (per TASK-9 §Fix-iteration wave inventory).
+- No `pack_audit: DIVERGENT` — divergence is unbounded per §D.
+- No CONSTITUTION §H iron-rule violation flagged (BLOCKER — never dieted).
+
+### K.2 Review-report diet shape
+
+Dieted review-report retains:
+- Frontmatter (all fields per §B.1, unchanged — including `verdict:`,
+  `severity_verdict_policy_ack:`, `rubric_bullet:`, `pack_audit:`,
+  `raw_doc_reads:`, and the new (Change 7) `wave:` field).
+- The mandatory derivation line `Verdict: <BLOCK|NEEDS-CHANGES|APPROVE> (derived — <reasoning>)`.
+- One-paragraph "What I checked" section (≤ 8 lines).
+- Findings block (NEVER dieted — that IS the review's value; per §I discipline
+  every finding still requires file:line + concrete failure path).
+- Focused-wave reports keep `## §Prior-finding re-verdicts` and (if present)
+  `## §Deferred-out-of-scope findings` sections verbatim per TASK-9.
+
+Removed under diet:
+- Per-file walkthrough prose ("I opened src/foo.ts and observed ..." with no
+  finding attached) — the review is not a diary.
+- Restatement of the TL's blast-radius analysis — the reviewer references
+  `tl-analysis.md` by path, does not re-quote it.
+- "Recommendation" paragraph beyond one sentence — verdict + derivation line +
+  findings ARE the recommendation.
+
+### K.3 Cap lifted (Report Diet §D applies to review reports too)
+
+The cap lifts under the same conditions as §D:
+- Verdict is `BLOCK` — reasoning is unbounded.
+- Any `UNRESOLVED` P0/P1 finding in focused-wave `§Prior-finding re-verdicts` —
+  unbounded (evidence for why the fix did not resolve the finding).
+- `pack_audit: DIVERGENT` — the divergence sentence itself is bounded but the
+  reviewer's expanded reasoning explaining WHY the pack under-served the review
+  is unbounded.
+- Any MISTAKES-tagged regression re-detected — unbounded (the regression
+  discovery is a first-class output).
+
+### K.4 Diet-compliance sweep (merge-readiness Step 2e extension)
+
+Same sweep as §J.4; no new grep. Reviewer-standards (as an axis) additionally
+verifies at review time that dieted review reports still carry the derivation
+line (per REPORT_DIET §G) — the diet MUST NOT strip the derivation line, only
+the surrounding prose. Any review report missing the derivation line is
+INVALID regardless of diet status.

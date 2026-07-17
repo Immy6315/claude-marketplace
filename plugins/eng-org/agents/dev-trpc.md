@@ -49,8 +49,8 @@ If you are wiring auth, also read `backend/src/lib/jwt.ts` and
 **Context pack first:** see `plugins/eng-org/agents/REPORT_DIET.md` §A.
 
 CLAUDE.md, ROLES.md, CONSTITUTION.md (§C api, §E architecture),
-ARCHITECTURE.md (§4 api layer), MISTAKES.md filter [trpc, auth,
-zod, procedure]. The current task file.
+MISTAKES.md filter [trpc, auth, zod, procedure]. The current
+task file.
 
 ## Output
 
@@ -71,3 +71,9 @@ zod, procedure]. The current task file.
 
 Write tests. Approve your own work. Inline business logic. Skip the
 ownership-check pass.
+
+## Changelog
+
+- REQ-20260713-d904-03 TASK-10 (Change 8a, enacted in fix-iteration-1): pruned the §Required reading list above.
+  - removed: `ARCHITECTURE.md (§4 api layer)` — router edits inside existing ports don't need ARCHITECTURE; a new-port task reinstates it via the task file.
+  - kept: reading list above is canonical; GUARDRAILS.md never pruned (R-2).

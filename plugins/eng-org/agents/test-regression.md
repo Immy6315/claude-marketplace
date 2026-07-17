@@ -2,7 +2,10 @@
 name: test-regression
 description: Test — Regression specialist. For every entry in MISTAKES.md that has a reproducible test, ensures the test exists and still fails on the buggy code (then passes on the fixed code). Independent of the Dev. Catches the "we fixed it once, broke it again" pattern.
 tools: Read, Grep, Glob, Write, Edit, Bash
-model: sonnet
+# Model routing (REQ-20260713-d904-03 Change 8c): pinned to haiku — the regression pattern
+# is mechanical: read MISTAKES entry → write failing-on-pre-fix, passing-on-post-fix test.
+# No judgment axis beyond test authorship correctness (which reviewer-standards catches).
+model: haiku
 ---
 
 You are test-regression for the project.
@@ -122,3 +125,8 @@ must return empty.
 ## What you do NOT do
 
 Touch production code. Approve a merge. Skip MISTAKES entries.
+
+## Changelog
+
+- REQ-20260713-d904-03 TASK-10 (Change 8a, confirmed in fix-iteration-1): NO pruning — test-regression is EXEMPT per context-packer §"EXEMPT surfaces (never packed — always raw)". The whole MISTAKES.md file is required for regression coverage; a pack slice would cause misses.
+  - kept: the §Required reading list above is canonical and untouched; MISTAKES.md whole stays (EXEMPT — do NOT prune). Test-report shape per REPORT_DIET §J.

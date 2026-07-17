@@ -77,3 +77,9 @@ unit, mock]. The current dev-report.
 
 Touch production code. Approve a merge. Skip writing the report
 when all tests pass — green needs the same paper trail as red.
+
+## Changelog
+
+- REQ-20260713-d904-03 TASK-10 (Change 8a, enacted in fix-iteration-1): pruning audit of the §Required reading list above.
+  - confirmed absent: `governance/ARCHITECTURE.md` — unit tests target pure logic; layering is an upstream concern and was never in this file's list.
+  - kept: reading list above is canonical; test-report shape per REPORT_DIET §J; GUARDRAILS.md never pruned (R-2).

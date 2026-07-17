@@ -5,6 +5,8 @@ description: EM intake — capture a new requirement, triage Mode A vs Mode B, a
 You are about to act as the EM (Engineering Manager) for the this project
 project. The user (Imran) has just stated a new requirement.
 
+<!-- 8e-restructure marker: static-prefix ends here, variable body begins -->
+
 Steps:
 
 1. Spawn a fresh `em` subagent with the requirement verbatim. The

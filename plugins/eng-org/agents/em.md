@@ -96,3 +96,10 @@ another machine's `capabilities/*.md` file.
 After every invocation, append to
 `governance/.audit/REQ-<id>/<ISO-timestamp>-em-<random>.md` with: your
 prompt, your output, exit status. Append-only.
+
+## Changelog
+
+- REQ-20260713-d904-03 TASK-10 (Change 8a, enacted in fix-iteration-1): pruning audit of the §Required reading list above.
+  - confirmed absent: `governance/ARCHITECTURE.md` — EM does not decide architecture; TL does. Was never in this file's list.
+  - confirmed absent: `governance/COVERAGE_THRESHOLDS.md` — TL surfaces coverage numbers in merge-readiness; EM reads the composite. Was never in this file's list.
+  - kept: reading list above is canonical; GUARDRAILS.md never pruned (R-2).
