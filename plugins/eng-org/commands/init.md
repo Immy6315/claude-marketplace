@@ -1,6 +1,6 @@
 ---
 description: Initialize the 5-role multi-agent engineering framework in the current project. Reads the project folder, detects stack and domains, then writes tailored agents, slash commands, and governance files.
-argument-hint: [--yes] [--bare]
+argument-hint: "[--yes] [--bare]"
 allowed-tools: Read, Glob, Grep, Write, Edit, Bash(node:*), Bash(ls:*), Bash(test:*), Bash(mkdir:*), Bash(cp:*), Bash(chmod:*), Bash(cat:*), Bash(pwd)
 ---
 

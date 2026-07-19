@@ -1,6 +1,6 @@
 ---
 name: graphyfy
-description: Generate or refresh Mermaid linking-graphs for an eng-org project so any AI or engineer can SEE how things connect — module/layer dependencies, domain & data-model relationships, requirement→task dependency DAG, and the role pipeline. Idempotent: creates the graphs if missing, updates the existing ones in place if present. Use when the user asks to graph/visualize/map the project, refresh the graphs, or wants a fresh AI to understand the project's linking quickly.
+description: "Generate or refresh Mermaid linking-graphs for an eng-org project so any AI or engineer can SEE how things connect — module/layer dependencies, domain & data-model relationships, requirement→task dependency DAG, and the role pipeline. Idempotent: creates the graphs if missing, updates the existing ones in place if present. Use when the user asks to graph/visualize/map the project, refresh the graphs, or wants a fresh AI to understand the project's linking quickly."
 allowed-tools: Read, Glob, Grep, Write, Edit, Bash(date:*), Bash(ls:*), Bash(test:*), Bash(pwd)
 ---
 

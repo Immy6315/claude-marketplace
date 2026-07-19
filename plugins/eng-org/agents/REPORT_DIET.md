@@ -1,3 +1,8 @@
+---
+name: report-diet
+description: Canonical reference for the verdict-report diet contract and the context-pack-first protocol. Referenced by other agent files by path; not a standalone invocable agent.
+---
+
 # Report diet contract (v2) — canonical reference
 
 > This document is the single canonical source for the verdict-report diet contract
