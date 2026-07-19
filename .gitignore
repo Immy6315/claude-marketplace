@@ -1,5 +1,6 @@
 # gr-reviewer operational artifacts (reviews ran against scratch checkouts here)
 docs/backend/
+.gr/
 
 # OS / editor noise
 .DS_Store
