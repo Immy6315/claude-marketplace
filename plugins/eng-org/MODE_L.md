@@ -38,7 +38,7 @@ GUARDRAILS template.
 LOOP (driver re-invokes /eng-org:autopilot-iterate PROG-<id>, fresh context each time)
    ↓ rehydrate from SPEC / acceptance-criteria / PLAN / STATE / LEARNINGS
    ↓ ONE work item: one pipeline stage of one REQ (em-intake → tl-analyze
-   ↓   → tl-assign → run-tests → run-reviews → merge-readiness → em-summary)
+   ↓   → trd → tl-assign → run-tests → run-reviews → merge-readiness → em-summary)
    ↓ ambiguity: decide-and-log (ASSUMPTIONS.md) or park — never ask mid-loop
    ↓ circuit breaker: 3× same fix fingerprint → park; budget exhausted → park;
    ↓   everything parked → HALT + escalation.md

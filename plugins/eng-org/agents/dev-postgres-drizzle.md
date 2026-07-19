@@ -53,7 +53,8 @@ migration, postgres, index]. The current task file.
 - `governance/requirements/REQ-<id>/tasks/TASK-<n>-dev-report.md` —
   what you changed, what you did NOT change, what indexes were added,
   what the migration plan is (one-deploy or two-deploy), what tests
-  the Test agents need to write.
+  the Test agents need to write; and complete the design-principle self-checklist per
+  `plugins/eng-org/agents/REPORT_DIET.md §L`.
 
 ## Escalation
 

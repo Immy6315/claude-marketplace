@@ -39,6 +39,30 @@ file list). Read ARCHITECTURE.md and MODULE_REGISTRY.md.
   adapters must still satisfy the contract.
 - **Migration ordering:** if schema change exists, the deploy
   story (one-deploy or two-deploy) is documented.
+- **Design-principle axis:** check the diff against `governance/DESIGN_PRINCIPLES.md`.
+  For each of the 15 principles in that curriculum, determine whether the change
+  violates it. If a violation exists and the Dev-report self-checklist
+  (REPORT_DIET §L, in `TASK-<n>-dev-report.md`) does NOT carry a declared
+  when-NOT trade-off citing that principle by name and naming the competing force,
+  that is a finding. A violation WITH a declared trade-off is reviewed on the
+  plausibility of the stated competing force — an implausible or inapplicable
+  trade-off claim does not excuse the violation. A principle that does not apply
+  to this diff (genuinely out of scope) is not a finding.
+- **TRD-conformance check (layered, mandatory):** Verify the change honors its TRD
+  (`governance/requirements/REQ-<id>/trd.md`, produced by the M1 TRD stage per
+  REQ-20260718-d904-02). Two layers, both required:
+  - **Layer 1 — mechanical:** (a) the TRD file exists; (b) its frontmatter carries
+    `trd_approved: true`; (c) its **E3 file-map** (the list of files the TRD declares
+    it will touch) reconciles with the actual diff's file set. Specifically: any file
+    present in the diff but absent from the E3 map is a `docs-drift` finding; any
+    file listed in the E3 map but absent from the diff is a `docs-drift` finding.
+    Name the E3-map-vs-diff reconciliation explicitly in your report — do NOT write
+    a vague "verify it honors the TRD."
+  - **Layer 2 — judgment:** narrate whether the diff honors the TRD's stated
+    flow/design intent (§1 context, §2 design decisions, E1 sequence). Did the
+    implementation deviate from the TRD's stated approach without an amendment? If
+    yes, that is a finding. If the deviation is minor and consistent with the spirit
+    of the TRD, state that explicitly.
 
 ## Things you refuse to do
 

@@ -1,6 +1,6 @@
 # GUARDRAILS.md — engineering guardrails (binding)
 
-> Eight hard rules that prevent the "fix one thing, break another"
+> Nine hard rules that prevent the "fix one thing, break another"
 > failure mode. These rules apply IN ADDITION to ROLES.md and
 > CONSTITUTION.md, not in place of them. Where a guardrail conflicts with
 > a rule, the **stricter reading wins**.
@@ -315,6 +315,42 @@ INSIDE it, so full autonomy between gate and checkpoint is safe.
 
 ---
 
+---
+
+## G-10. Boy Scout not Demolition — anti-rewrite / scope-explosion guard
+
+Design principles and refactors apply **ONLY to new or changed code**.
+A pre-existing issue in code you merely touched is **logged to
+`governance/TECH_DEBT.md`** (with the retirement-date / REQ-id shape
+G-5 already uses), NOT opportunistically rewritten.
+
+**Characterization-test-before-touching-legacy:** before changing
+legacy behavior, pin the current behavior with a characterization test
+so the change is provably behavior-preserving — or the behavior delta
+is explicit and acknowledged.
+
+**Mechanical enforcement:** `scope-explosion-guard.mjs` compares the
+actual diff (files-touched + LOC via `git diff --numstat`) against the
+TRD §E2 declared budget (`files_touched_max` / `loc_max`) × tolerance
+(default 1.5×) and BLOCKs when the diff is grossly over budget. The
+ONLY override is `allow_full_rewrite: true` in the human/EM-approved
+TRD (provenance = ROLES §2.2 TRD approval marker). No env var, no CLI
+flag, no agent-settable bypass — the only escape hatch is a field in a
+document that already passed human approval.
+
+**TECH_DEBT log path:** pre-existing issues that cannot be fixed in the
+current REQ are recorded in `governance/TECH_DEBT.md` with the same
+shape G-5 requires: retirement date (max 30 days), REQ-id, reason the
+fix is deferred.
+
+**Why this exists:** Each agent dispatch is a fresh context. Without a
+mechanical gate an agent asked for a minimal change can silently
+rewrite large swaths of working code under a "while I was in here"
+rationale. The TRD §E2 budget makes the declared scope enforceable; the
+guard makes the enforcement automatic.
+
+---
+
 ## Enforcement summary
 
 | Guardrail | Enforced by | At which gate |
@@ -328,6 +364,7 @@ INSIDE it, so full autonomy between gate and checkpoint is safe.
 | G-7 API contract parity | TL (assigned), reviewer-security, reviewer-architecture | `merge-readiness.md` §Contract parity |
 | G-8 contract registry | TL (assigned), reviewer-security | At G-7 evaluation |
 | G-9 clarity gate (Mode L) | EM + architect at gate; TL + reviewers on immutable zone | Before loop start; every merge-readiness during the program |
+| G-10 scope-explosion guard | TL (assigned), reviewer-standards, reviewer-architecture | `merge-readiness.md` §Scope-explosion sweep |
 
 These guardrails are part of ROLES.md's effective contract. They take
 precedence over agent-internal heuristics. Where any reviewer disagrees
@@ -343,3 +380,4 @@ silently waive.
 | YYYY-MM-DD | Initial commit (G-1..G-6) | <incident-summary> |
 | YYYY-MM-DD | Added G-7 (API contract parity) + G-8 (contract registry) | Backend analogue of G-1/G-6 — catch silent response-contract drift and public-endpoint data leaks under parallel autonomous Devs. |
 | YYYY-MM-DD | Added G-9 (clarity gate, Mode L) | Autonomous build-until-done loops fail two ways: ambiguous specs compound garbage, and doom loops never give up. G-9 front-loads clarity + installs immutable zone and circuit breaker. |
+| 2026-07-18 | Added G-10 (Boy Scout not Demolition — scope-explosion guard) | Make §E2 change-budget enforceable by mechanical gate; prevent "while-I-was-in-here" rewrites under autonomous agents. REQ-20260718-d904-05. |

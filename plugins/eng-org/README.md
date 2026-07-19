@@ -188,11 +188,12 @@ ADR. TLs MUST read the ADR before `tl-analyze`.
 | 0 | `/eng-org:architect <subsystem>` | (when triggered) Architect produces a versioned ADR doc against `governance/architecture/briefs/<subsystem>-brief.md`; adversarially reviewed by reviewer-architecture / reviewer-security / reviewer-performance; iterates until all APPROVE → status flips to ACCEPTED |
 | 1 | `/eng-org:em-intake "<requirement>"` | EM creates `REQ-<id>`, triages Mode A vs Mode B |
 | 2 | `/eng-org:tl-analyze REQ-<id>` | TL drafts a tasks plan + risk list |
-| 3 | `/eng-org:tl-assign REQ-<id>` | TL spawns Dev specialists per task |
-| 4 | `/eng-org:run-tests REQ-<id>` | Independent test agents (unit / integration / e2e / regression / load) |
-| 5 | `/eng-org:run-reviews REQ-<id>` | Reviewers (architecture / security / performance / standards / observability / indexes) **+ GR deep-review** (see below) |
-| 6 | `/eng-org:merge-readiness REQ-<id>` | TL aggregates, EM gates |
-| 7 | `/eng-org:em-summary REQ-<id>` | Human-facing summary |
+| 3 | `/eng-org:trd REQ-<id>` | TL/EM authors TRD from frozen template, lints with trd-lint.mjs (exit 0 required), records approval marker |
+| 4 | `/eng-org:tl-assign REQ-<id>` | TL spawns Dev specialists per task |
+| 5 | `/eng-org:run-tests REQ-<id>` | Independent test agents (unit / integration / e2e / regression / load) |
+| 6 | `/eng-org:run-reviews REQ-<id>` | Reviewers (architecture / security / performance / standards / observability / indexes) **+ GR deep-review** (see below) |
+| 7 | `/eng-org:merge-readiness REQ-<id>` | TL aggregates, EM gates |
+| 8 | `/eng-org:em-summary REQ-<id>` | Human-facing summary |
 
 `/eng-org:pilot-check` is a self-test of the framework on its own files.
 
@@ -271,6 +272,21 @@ Hard lines: the loop never edits `SPEC.md` / `acceptance-criteria.md` /
 pre-program baseline tests (immutable zone — anti-reward-hacking), never
 merges (§H rule 47), and never relaxes a guardrail. Mode L is never a
 triage outcome — the EM can only *recommend* it; a human activates it.
+
+---
+
+## Developer-experience commands
+
+Auxiliary on-demand commands — not pipeline stages. Use these at any point to inspect
+or drive the pipeline without replacing any of the 8 ordered Mode B commands above.
+
+| Command | Purpose |
+|---|---|
+| `/eng-org:trd REQ-<id>` | TRD authoring + lint + approval — author the Technical Requirements Document, pass `trd-lint.mjs` (exit 0 required), record EM approval marker. Sits between `tl-analyze` and `tl-assign` in the pipeline. |
+| `/eng-org:status` | Pipeline board — table-only view of all in-flight REQs and programs (read-only). |
+| `/eng-org:why REQ-<id>` | First-missing-stage diagnostic — prints the current blocker for one REQ and the exact fix command (read-only). |
+| `/eng-org:ship REQ-<id>` | One-shot full-pipeline orchestrator — invokes all 8 Mode B commands in order, halts on the first red gate, never swallows errors, and stops at READY-FOR-MERGE (human merge is §H.47-gated). |
+| `/eng-org:blockers [PROG-<id>]` | Human-gated inbox — surfaces open items from `HUMAN-BLOCKERS.md` that need Imran's action; read-only, never auto-resolves. |
 
 ---
 

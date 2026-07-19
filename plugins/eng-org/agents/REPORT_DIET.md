@@ -459,3 +459,71 @@ verifies at review time that dieted review reports still carry the derivation
 line (per REPORT_DIET §G) — the diet MUST NOT strip the derivation line, only
 the surrounding prose. Any review report missing the derivation line is
 INVALID regardless of diet status.
+
+---
+
+## L. Dev-report design-principle self-checklist
+
+> **Canonical body — do NOT inline this section into individual `dev-*.md` agent files.**
+> Per the founding rule of this document (header, line 4–6), inlining across 5+ files
+> guarantees drift. The 5 dev agents reference this section by pointer only.
+> Reference doc: `governance/DESIGN_PRINCIPLES.md` (and its byte-identical shipped copy
+> at `claude-marketplace/plugins/eng-org/templates/governance/DESIGN_PRINCIPLES.md`).
+
+### L.1 Purpose
+
+Every Dev completes this checklist in their `TASK-<n>-dev-report.md`. It records:
+
+1. Which of the 15 design principles in `governance/DESIGN_PRINCIPLES.md` apply to this
+   change (even if trivially — "not applicable" is a valid answer per-principle when the
+   diff genuinely does not touch that concern).
+2. Any deliberate **when-NOT trade-off** taken — i.e., a case where the Dev consciously
+   chose NOT to apply a principle because a competing force outweighed it. Each such
+   trade-off must cite the principle by name and state the competing force in one sentence.
+
+### L.2 Checklist template (paste into TASK-<n>-dev-report.md)
+
+```markdown
+## Design-principle self-checklist (REPORT_DIET §L)
+
+Reference: `governance/DESIGN_PRINCIPLES.md`
+
+| Principle | Applied? | Notes / when-NOT trade-off taken |
+|---|---|---|
+| Single Responsibility (SRP) | yes / no / n/a | |
+| Open-Closed (OCP) | yes / no / n/a | |
+| Liskov Substitution (LSP) | yes / no / n/a | |
+| Interface Segregation (ISP) | yes / no / n/a | |
+| Dependency Inversion (DIP) | yes / no / n/a | |
+| DRY (+ Rule of Three) | yes / no / n/a | |
+| KISS | yes / no / n/a | |
+| YAGNI | yes / no / n/a | |
+| Law of Demeter | yes / no / n/a | |
+| Composition Over Inheritance | yes / no / n/a | |
+| Pure Core / Imperative Shell | yes / no / n/a | |
+| Separation of Concerns (SoC) | yes / no / n/a | |
+| Fail Fast | yes / no / n/a | |
+| Make Illegal States Unrepresentable | yes / no / n/a | |
+| Least Astonishment | yes / no / n/a | |
+
+### When-NOT trade-offs declared
+
+<!-- For each "no" row where a when-NOT trade-off applies, add one line:
+     - **<PrincipalName>:** <competing force in one sentence, citing DESIGN_PRINCIPLES.md §N>. -->
+
+_(none — or list below)_
+```
+
+### L.3 Reviewer axis
+
+The `reviewer-architecture` agent checks this checklist as part of its design-principle
+axis (see `plugins/eng-org/agents/reviewer-architecture.md` §"What you check"):
+
+- A principle marked **no** without a declared when-NOT trade-off is a finding
+  (the Dev may have violated the principle unknowingly).
+- A principle marked **no** WITH a declared when-NOT trade-off is accepted as a
+  conscious decision (the reviewer still reads the trade-off statement and may flag
+  it if the stated competing force is implausible or inapplicable).
+- A principle marked **n/a** with no note is accepted if the diff genuinely does
+  not touch that concern; the reviewer may challenge a blanket n/a on a diff that
+  visibly implicates the principle.

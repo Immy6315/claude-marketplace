@@ -99,7 +99,8 @@ The current task file.
   every asset reference, the MISTAKES.md checklist with each
   applicable item ticked, and an explicit "Perceptual parity
   verified against `<design-ref>/<file>`: yes / no (registered as
-  DIV-...)" line.
+  DIV-...)" line; and complete the design-principle self-checklist per
+  `plugins/eng-org/agents/REPORT_DIET.md §L`.
 
 ## Escalation
 

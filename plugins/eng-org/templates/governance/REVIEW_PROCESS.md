@@ -294,7 +294,16 @@ section is the **operational playbook** — what runs in what order.
      coordination notes link to the others.
    • Slash command: /tl-analyze REQ-<id>
 
-3. TL assignment + Dev implementation (parallel where files don't conflict)
+3. TRD authoring + lint + approval
+   • TL/EM authors the Technical Requirements Document from the frozen
+     template into governance/requirements/REQ-<id>/trd.md.
+   • Runs trd-lint.mjs on the TRD — exit 0 required (hard gate).
+   • Records EM/human approval marker (trd_approved: true) in trd.md
+     frontmatter ONLY after lint PASS.
+   • tl-assign will refuse to dispatch Devs until this step is complete.
+   • Slash command: /eng-org:trd REQ-<id>
+
+4. TL assignment + Dev implementation (parallel where files don't conflict)
    • TL spawns Dev agent per TASK with /tl-assign.
    • Dev reads task + required files; implements; writes
      implementation/TASK-<n>-diff.md.
@@ -302,29 +311,29 @@ section is the **operational playbook** — what runs in what order.
    • Dev does NOT write integration/e2e/load tests (Test agents do).
    • Self-checks: tsc --noEmit, eslint, the unit tests they wrote.
 
-4. Test agents (5 in parallel after Devs report done)
+5. Test agents (5 in parallel after Devs report done)
    • TL fires /run-tests REQ-<id>.
    • test-unit, test-integration, test-e2e, test-regression, test-load
      run in parallel; each writes tests/<type>-report.md.
    • Failure → finding routes back to Dev via TL; Dev fixes;
      fresh test agent of same type re-runs.
 
-5. Reviewer agents (5 in parallel; can start when Tests are green)
+6. Reviewer agents (5 in parallel; can start when Tests are green)
    • TL fires /run-reviews REQ-<id>.
    • reviewer-architecture, reviewer-security, reviewer-performance,
      reviewer-standards, reviewer-observability run in parallel;
      each writes reviews/<reviewer>.md.
    • BLOCKER → Dev fix; fresh reviewer of same type re-runs.
 
-6. Merge-readiness composite (TL)
+7. Merge-readiness composite (TL)
    • TL writes merge-readiness.md with hard gates checked.
    • Slash command: /merge-readiness REQ-<id>.
 
-7. EM summary (EM)
+8. EM summary (EM)
    • EM writes em-summary.md, 1-page, Imran-readable.
    • Slash command: /em-summary REQ-<id>.
 
-8. Human approval
+9. Human approval
    • Imran reads em-summary.md.
    • Imran approves merge OR returns to EM with reasons.
    • The framework stops at "ready for merge." Deployment is

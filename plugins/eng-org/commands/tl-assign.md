@@ -8,6 +8,29 @@ You are dispatching Devs for a requirement.
 
 The requirement id is: $ARGUMENTS.
 
+**TRD gate (hard precondition — MUST pass before dispatching any Dev):**
+
+`/eng-org:trd REQ-<id>` must have been run and completed successfully.
+Verify all three conditions mechanically before proceeding to Step 1:
+
+1. The TRD file exists:
+   ```bash
+   test -f governance/requirements/REQ-<id>/trd.md
+   ```
+2. The linter passes (exit 0):
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/trd-lint.mjs" \
+     "governance/requirements/REQ-<id>/trd.md"
+   ```
+3. The EM/human approval marker is present:
+   ```bash
+   grep -q '^trd_approved: true' governance/requirements/REQ-<id>/trd.md
+   ```
+
+If ANY of these checks fails, STOP. Do NOT dispatch any Dev agent.
+Instruct the caller to run `/eng-org:trd REQ-<id>` first and ensure it
+completes with lint PASS and the approval marker recorded.
+
 Steps:
 
 1. Read every `governance/requirements/REQ-<id>/tasks/TASK-*.md`

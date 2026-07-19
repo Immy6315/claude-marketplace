@@ -56,7 +56,8 @@ CLAUDE.md, ROLES.md, CONSTITUTION.md (§B data, §E architecture,
   every function you added/changed, its signature, its invariants,
   edge cases (zero, negative, very-large, boundary), and the test
   cases that must exist (test-unit will write them, but you specify
-  the contract).
+  the contract); and complete the design-principle self-checklist per
+  `plugins/eng-org/agents/REPORT_DIET.md §L`.
 
 ## Escalation
 

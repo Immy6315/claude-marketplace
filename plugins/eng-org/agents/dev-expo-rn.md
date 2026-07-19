@@ -96,7 +96,8 @@ file.
   an explicit "Device boot smoke: PASS (`expo run:ios` reached
   first-route mount) / DEFERRED (asked <name> to run)" line per
   G-3 for any `package.json::dependencies` or `app.json::expo.extra`
-  diff.
+  diff; and complete the design-principle self-checklist per
+  `plugins/eng-org/agents/REPORT_DIET.md §L`.
 
 ## Escalation
 

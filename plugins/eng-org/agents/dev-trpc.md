@@ -58,7 +58,8 @@ task file.
 - `governance/requirements/REQ-<id>/tasks/TASK-<n>-dev-report.md` —
   list every procedure added/changed, its procedure-type, its input
   schema, its ownership check, its error mapping, and what mobile
-  callers need to update.
+  callers need to update; and complete the design-principle self-checklist per
+  `plugins/eng-org/agents/REPORT_DIET.md §L`.
 
 ## Escalation
 

@@ -55,6 +55,28 @@ Steps:
        add the registry entry AND update the baseline as part of
        merge); `LEAK` on a public endpoint = **unconditional BLOCK**,
        no registry entry waives it.
+     - **G-10 (scope-explosion sweep):** Run the guard against the
+       REQ's TRD and actual diff:
+       ```bash
+       node "${CLAUDE_PLUGIN_ROOT}/scripts/scope-explosion-guard.mjs" \
+         --trd governance/requirements/REQ-<id>/trd.md \
+         --changed /tmp/changed.json \
+         --numstat /tmp/numstat.txt
+       ```
+       Where `changed.json` is produced by `git-changed-to-json.mjs`
+       and `numstat.txt` is the output of `git diff --numstat`.
+       - Exit 0 + verdict=PASS → PASS (within budget × 1.5).
+       - Exit 0 + verdict=OVERRIDE → PASS (TL records the explicit
+         `OVERRIDE: allow_full_rewrite=true (provenance: EM-approved TRD)`
+         line in `merge-readiness.md §Scope-explosion sweep`).
+       - Exit 1 (BLOCK) → NOT-READY; the TL remands to the Dev to
+         either reduce scope to fit the declared §E2 budget, or obtain
+         EM approval to set `allow_full_rewrite: true` in the TRD.
+       - Exit 2/3 (IO/parse error) → investigate; do not silently
+         treat as PASS.
+       This sweep is **always required** for any REQ with a TRD that
+       carries a populated §E2 section. REQs with no §E2 (docs-only,
+       governance-only under Mode A) are exempt with a skip-note.
    - **Step 2b — Forced-sampling audit (ALWAYS, not dispute-triggered):**
      On every REQ, TL opens **1 randomly chosen evidence file per REQ**
      from the union of all test-report `evidence:` paths + all
@@ -345,7 +367,7 @@ Steps:
      - Review signal (all APPROVE required OR SKIP-with-note per `run-reviews.md §Step 2b` (Change 8b) per default-set count from `run-reviews.md §Step 2` — post-TASK-6 that is the RESHAPE set of 7 role reviewers (2 consolidated + 4 survivors + reviewer-security) + GR, pre-TASK-6 fallback is 5 role + GR + reviewer-indexes if applicable; **worst-of aggregation** — verdict of the REQ as a whole is the max of all reviewer verdicts per REPORT_DIET.md §G.1 derivation rule: any BLOCK ⇒ overall BLOCK; else any NEEDS-CHANGES ⇒ overall NEEDS-CHANGES; else APPROVE. Softening/averaging/majority-vote is BANNED. Pinned reviewers shown as `GREEN@<sha> (pinned)`. **One NEEDS-CHANGES overall is not silently accepted** — READY-FOR-MERGE requires either overall APPROVE OR an explicit `em_ack_needs_changes:` line in `merge-readiness.md §EM decisions` citing the specific NEEDS-CHANGES report(s) and the reason for merging with the follow-on remediation plan. **Mixed full-wave + focused-fix-iter waves accepted iff every previously-flagged finding carries a terminal `RESOLVED` / `UNRESOLVED` re-verdict per `§Fix-iteration wave inventory` below — any `UNRESOLVED` finding of severity P0 or P1 = NOT-READY, unchanged.** The verdict-lint sweep (Step 2e item 5 above) enforces the derivation mechanically; this review-signal section documents it.)
      - MISTAKES regression sweep result (test-regression tier)
      - MISTAKES learning-loop debt (`mistakes-gate.mjs` — Step 2e item 7 above); PASS / FAIL / SKIP with reason
-     - Guardrail sweep: G-1 / G-2 / G-3 / G-5 / G-7 outcomes with
+     - Guardrail sweep: G-1 / G-2 / G-3 / G-5 / G-7 / G-10 outcomes with
        evidence paths
      - GR deep-review disposition table (or skip-note)
      - Pinned-verdict audit: list of pinned tiers + corresponding
@@ -373,4 +395,4 @@ Steps:
 A merge-readiness.md without all signals green — 5 test tiers + the
 full default review set per `run-reviews.md §Step 2` (7 role reviews +
 GR at 0.15.0; skip-with-note stubs count as present per §Step 2b) — OR missing any applicable guardrail sweep (G-1 / G-2 / G-3
-/ G-5 / G-7), is invalid; the TL refuses to write READY-FOR-MERGE.
+/ G-5 / G-7 / G-10), is invalid; the TL refuses to write READY-FOR-MERGE.
