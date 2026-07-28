@@ -12,7 +12,7 @@
   "plugins": [
     {
       "name": "gr-reviewer",
-      "source": "./plugins/gr-reviewer",
+      "source": { "source": "npm", "package": "@eztech/gr-reviewer" },
       "description": "Multi-agent PR reviewer — runs 7 specialist AI agents in parallel and posts inline GitHub comments.",
       "version": "0.1.6",
       "category": "code-review",
